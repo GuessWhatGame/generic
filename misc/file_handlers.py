@@ -40,3 +40,6 @@ def dump_json(file_path, json_string):
         results_json = json.dumps(json_string)
         f.write(results_json.encode('utf8', 'replace'))
 
+
+
+

@@ -56,3 +56,13 @@ def cross_entropy(y_hat, y):
     raise ValueError('Rank of target vector must be 1 or 2')
 
 
+def error(y_hat, y):
+    if rank(y) == 1:
+        mistakes = tf.not_equal(
+            tf.argmax(y_hat, 1) , tf.cast(y, tf.int64))
+    elif rank(y) == 2:
+        mistakes = tf.not_equal(
+            tf.argmax(y_hat, 1), tf.argmax(y, 1))
+    else:
+        assert False
+    return tf.cast(mistakes, tf.float32)
