@@ -3,7 +3,7 @@ import hashlib
 import json
 import os
 
-from  generic.misc.logger import create_logger
+from  generic.utils.logger import create_logger
 
 def load_config(config_file, exp_dir):
     with open(config_file, 'rb') as f_config:

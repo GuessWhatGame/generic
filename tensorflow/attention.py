@@ -7,14 +7,13 @@ def compute_attention(feature_maps, context, no_mlp_units):
     with tf.variable_scope("attention"):
 
         if len(feature_maps.get_shape()) == 3:
-            h = tf.shape(feature_maps)[1] #when the shape is dynamic (attention over lstm)
+            h = tf.shape(feature_maps)[1]  # when the shape is dynamic (attention over lstm)
             w = 1
             c = int(feature_maps.get_shape()[2])
         else:
             h = int(feature_maps.get_shape()[1])
             w = int(feature_maps.get_shape()[2])
             c = int(feature_maps.get_shape()[3])
-
 
         s = int(context.get_shape()[1])
 
@@ -49,12 +48,11 @@ def compute_glimpse(feature_maps, context, no_glims, glimse_embedding_size, keep
         w = int(feature_maps.get_shape()[2])
         c = int(feature_maps.get_shape()[3])
 
-
         # reshape state to perform batch operation
         context = tf.nn.dropout(context, keep_dropout)
         projected_context = mlp.fully_connected(context, glimse_embedding_size,
-                                                  scope='hidden_layer', activation="tanh",
-                                                  use_bias=False)
+                                                scope='hidden_layer', activation="tanh",
+                                                use_bias=False)
 
         projected_context = tf.expand_dims(projected_context, axis=1)
         projected_context = tf.tile(projected_context, [1, h * w, 1])
@@ -67,7 +65,7 @@ def compute_glimpse(feature_maps, context, no_glims, glimse_embedding_size, keep
             g_feature_maps = tf.reshape(feature_maps, shape=[-1, c])  # linearise the feature map as as single batch
             g_feature_maps = tf.nn.dropout(g_feature_maps, keep_dropout)
             g_feature_maps = mlp.fully_connected(g_feature_maps, glimse_embedding_size, scope='picture_projection',
-                                                   activation="tanh", use_bias=False)
+                                                 activation="tanh", use_bias=False)
 
             hadamard = g_feature_maps * projected_context
             hadamard = tf.nn.dropout(hadamard, keep_dropout)
@@ -89,3 +87,23 @@ def compute_glimpse(feature_maps, context, no_glims, glimse_embedding_size, keep
     return full_glimpse
 
 
+def create_attention(feature_map, lstm, config, keep_dropout=1):
+    attention_mode = config.get("mode", None)
+
+    if attention_mode == "none":
+        picture_out = tf.reduce_mean(feature_map, axis=(1, 2))
+
+    elif attention_mode == "classic":
+        picture_out = compute_attention(feature_map,
+                                        lstm,
+                                        no_mlp_units=config['no_attention_mlp'])
+    elif attention_mode == "glimpse":
+        picture_out = compute_glimpse(feature_map,
+                                      lstm,
+                                      no_glims=config['no_glimpses'],
+                                      glimse_embedding_size=config['no_attention_mlp'],
+                                      keep_dropout=keep_dropout)
+    else:
+        assert False, "Wrong attention mode: {}".format(attention_mode)
+
+    return picture_out
