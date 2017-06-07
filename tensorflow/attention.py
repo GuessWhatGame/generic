@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-import generic.tensorflow.mlp as mlp
+import generic.tensorflow.utils as mlp
 
 
 def compute_attention(feature_maps, context, no_mlp_units):
