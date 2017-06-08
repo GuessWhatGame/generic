@@ -28,6 +28,15 @@ def load_config(config_file, exp_dir):
 
     return config, exp_identifier, save_path
 
+def get_config_from_xp(exp_dir, identifier):
+    config_path = os.path.join(exp_dir, identifier, 'config.json')
+    if not os.path.exists(config_path):
+        raise RuntimeError("Couldn't find config")
+
+    with open(config_path, 'rb') as f:
+        return json.load(f)
+
+
 def set_seed(config):
     import numpy as np
     import tensorflow as tf

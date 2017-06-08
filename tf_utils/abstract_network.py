@@ -7,16 +7,6 @@ class AbstractNetwork(object):
         self.scope_name = scope_name
         self.device = device
 
-    @classmethod
-    def from_exp_identifier(cls, identifier, exp_dir):
-        config_path = os.path.join(exp_dir, identifier, 'config.json')
-        if not os.path.exists(config_path):
-            raise RuntimeError("Couldn't find config")
-
-        with open(config_path, 'rb') as f:
-            config = json.load(f)
-        return cls(config)
-
     def get_parameters(self):
         return tf.trainable_variables()
 
@@ -29,3 +19,5 @@ class AbstractNetwork(object):
             return [p for p in placeholders if p.device[-1] == str(self.device)]
         return placeholders
 
+    def get_outputs(self):
+        pass

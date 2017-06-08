@@ -7,7 +7,7 @@ from generic.data_provider.batchifier import AbstractBatchifier
 #Note from author : we put extra documentation as we beleive that this class can be very useful to other developers
 
 
-def sem_iterator(l: list, sem: Semaphore) -> object:
+def sem_iterator(l, sem):
     """
     Turn a list into a generator with a hidden semaphote (to limit the number off ongoing iteration)
 
@@ -19,7 +19,7 @@ def sem_iterator(l: list, sem: Semaphore) -> object:
         yield e
 
 
-def split_batch(games: list, batch_size: int, use_padding: bool) -> list:
+def split_batch(games, batch_size, use_padding):
     """
     Split a list of games into sublist of games of size batch_size
 
@@ -52,8 +52,8 @@ def split_batch(games: list, batch_size: int, use_padding: bool) -> list:
 class Iterator(object):
     """Provides an generic multithreaded iterator over the dataset."""
 
-    def __init__(self, dataset: AbstractDataset, batch_size: int, batchifier: AbstractBatchifier, pool: Pool,
-                 shuffle: bool = False, use_padding: bool = False, no_semaphore: int = 20):
+    def __init__(self, dataset, batch_size, batchifier, pool,
+                 shuffle= False, use_padding = False, no_semaphore= 20):
 
         # Filtered games
         games = dataset.get_data()

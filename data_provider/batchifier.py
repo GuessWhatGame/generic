@@ -1,7 +1,7 @@
 class AbstractBatchifier(object):
 
-    def filter(self, games: list):
+    def filter(self, games):
         return games
 
-    def apply(self, games: list):
+    def apply(self, games):
         return games
