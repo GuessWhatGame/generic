@@ -2,29 +2,19 @@ import math
 import tensorflow as tf
 from tensorflow.python.ops.init_ops import UniformUnitScaling, Constant
 
-# import tensorflow.contrib.layers as layers
-
-# def get_embedding(lookup_indices, n_words, n_dim,
-#                   scope="embedding", reuse=False):
-#     with tf.variable_scope(scope, reuse=reuse):
-#
-#         with tf.control_dependencies([tf.assert_non_negative(n_words - tf.reduce_max(lookup_indices))]):
-#             embedding_matrix = tf.get_variable(
-#                     'W', [n_words, n_dim],
-#                     initializer=tf.random_uniform_initializer(-0.08, 0.08))
-#             embedded = tf.nn.embedding_lookup(embedding_matrix, lookup_indices)
-#             return embedded
+import tensorflow.contrib.layers as layers
 
 def get_embedding(lookup_indices, n_words, n_dim,
                   scope="embedding", reuse=False):
-
-
     with tf.variable_scope(scope, reuse=reuse):
-        embedding_matrix = tf.get_variable(
-            'W', [n_words, n_dim],
-            initializer=tf.random_normal_initializer(-0.08, 0.08))
-        embedded = tf.nn.embedding_lookup(embedding_matrix, lookup_indices)
-    return embedded
+
+        with tf.control_dependencies([tf.assert_non_negative(n_words - tf.reduce_max(lookup_indices))]):
+            embedding_matrix = tf.get_variable(
+                    'W', [n_words, n_dim],
+                    initializer=tf.random_uniform_initializer(-0.08, 0.08))
+            embedded = tf.nn.embedding_lookup(embedding_matrix, lookup_indices)
+            return embedded
+
 
 def fully_connected(inp, n_out, activation=None, scope="fully_connected",
                     weight_initializer=UniformUnitScaling(),
