@@ -87,7 +87,7 @@ def compute_glimpse(feature_maps, context, no_glims, glimse_embedding_size, keep
     return full_glimpse
 
 
-def create_attention(feature_map, lstm, config, keep_dropout=1):
+def attention_factory(feature_map, lstm, config, keep_dropout=1):
     attention_mode = config.get("mode", None)
 
     if attention_mode == "none":

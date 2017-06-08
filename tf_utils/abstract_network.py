@@ -2,7 +2,7 @@ import tensorflow as tf
 import os
 import json
 
-class AbstractModel(object):
+class AbstractNetwork(object):
     def __init__(self, scope_name, device=''):
         self.scope_name = scope_name
         self.device = device
