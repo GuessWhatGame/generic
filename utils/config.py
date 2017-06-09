@@ -33,7 +33,7 @@ def get_config_from_xp(exp_dir, identifier):
     if not os.path.exists(config_path):
         raise RuntimeError("Couldn't find config")
 
-    with open(config_path, 'rb') as f:
+    with open(config_path, 'r') as f:
         return json.load(f)
 
 
