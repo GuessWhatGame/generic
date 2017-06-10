@@ -3,7 +3,7 @@ from PIL import Image
 
 import numpy as np
 
-from generic.data_provider.image_preprocessors import resize_image
+from generic.data_provider.image_preprocessors import resize_image, scaled_crop_and_pad
 from generic.utils.file_handlers import pickle_loader
 
 
@@ -85,5 +85,27 @@ class RawImageLoader(AbstractImgLoader):
 
         return img
 
+class RawCropLoader(AbstractImgLoader):
+    def __init__(self, data_dir, width, height, channel=None, extension="jpg"):
+        AbstractImgLoader.__init__(self, data_dir)
+        self.image_path = os.path.join(self.img_dir, "{}."+extension)
+        self.width = width
+        self.height = height
+        self.channel = channel
 
+    def get_image(self, picture_id, **kwargs):
+
+        bbox = kwargs['bbox']
+        scale = kwargs["scale"]
+
+        img = Image.open(self.image_path.format(picture_id)).convert('RGB')
+
+        crop = scaled_crop_and_pad(raw_img=img, bbox=bbox, scale=scale)
+        crop = resize_image(crop, self.width , self.height)
+        crop = np.array(crop, dtype=np.float32)
+
+        if self.channel is not None:
+            crop -= self.channel[None, None, :]
+
+        return crop
 
