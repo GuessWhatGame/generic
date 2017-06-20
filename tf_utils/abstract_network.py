@@ -14,7 +14,7 @@ class AbstractNetwork(object):
         return [os.path.basename(tensor.name) for tensor in self.get_inputs(sess) if self.scope_name in tensor.name]
 
     def get_inputs(self, sess):
-        placeholders = [p for p in sess.graph.get_operations() if p.type == "Placeholder" if self.scope_name in p.name ]
+        placeholders = [p for p in sess.graph.get_operations() if "holder" in p.type if self.scope_name in p.name ]
         if self.device is not '':
             return [p for p in placeholders if p.device[-1] == str(self.device)]
         return placeholders
