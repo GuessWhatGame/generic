@@ -86,21 +86,22 @@ class RawImageLoader(AbstractImgLoader):
         return img
 
 class RawCropLoader(AbstractImgLoader):
-    def __init__(self, data_dir, width, height, channel=None, extension="jpg"):
+    def __init__(self, data_dir, width, height, scale, channel=None, extension="jpg"):
         AbstractImgLoader.__init__(self, data_dir)
         self.image_path = os.path.join(self.img_dir, "{}."+extension)
         self.width = width
         self.height = height
+        self.scale = scale
         self.channel = channel
 
-    def get_image(self, picture_id, **kwargs):
+    def get_image(self, object_id, **kwargs):
 
         bbox = kwargs['bbox']
-        scale = kwargs["scale"]
+        image_id = kwargs['image_id']
 
-        img = Image.open(self.image_path.format(picture_id)).convert('RGB')
+        img = Image.open(self.image_path.format(image_id)).convert('RGB')
 
-        crop = scaled_crop_and_pad(raw_img=img, bbox=bbox, scale=scale)
+        crop = scaled_crop_and_pad(raw_img=img, bbox=bbox, scale=self.scale)
         crop = resize_image(crop, self.width , self.height)
         crop = np.array(crop, dtype=np.float32)
 
