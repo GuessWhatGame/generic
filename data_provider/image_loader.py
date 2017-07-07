@@ -12,14 +12,16 @@ from generic.utils.file_handlers import pickle_loader
 
 
 
+
 class AbstractImgLoader(object):
     def __init__(self, img_dir):
         self.img_dir = img_dir
 
+    # The goal of the preloading is to pre-st
     def preload(self,picture_id):
         return self
 
-    def get_image(self, picture_id):
+    def get_image(self, picture_id, **kwargs):
         pass
 
 
@@ -29,7 +31,7 @@ class DummyImgLoader(AbstractImgLoader):
         AbstractImgLoader.__init__(self, data_dir)
         self.size = size
 
-    def get_image(self, _):
+    def get_image(self, _, **kwargs):
         return np.zeros(self.size)
 
 
@@ -42,7 +44,7 @@ class fcPreloaded(AbstractImgLoader):
         AbstractImgLoader.__init__(self, data_dir)
         self.fc8 = fc8
 
-    def get_image(self, _):
+    def get_image(self, _, **kwargs):
         return self.fc8
 
 
@@ -62,7 +64,7 @@ class ConvLoader(AbstractImgLoader):
         AbstractImgLoader.__init__(self, data_dir)
         self.image_path = os.path.join(data_dir, "{}.npz")
 
-    def get_image(self, picture_id):
+    def get_image(self, picture_id, **kwargs):
         return np.load(self.image_path.format(picture_id)['x'])
 
 
@@ -74,7 +76,7 @@ class RawImageLoader(AbstractImgLoader):
         self.height = height
         self.channel = channel
 
-    def get_image(self, picture_id):
+    def get_image(self, picture_id, **kwargs):
         img = Image.open(self.image_path.format(picture_id)).convert('RGB')
 
         img = resize_image(img, self.width , self.height)
