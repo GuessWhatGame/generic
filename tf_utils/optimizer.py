@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
-def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True):
+def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, fined_tuned=list):
 
     lrt = config['optimizer']['learning_rate']
     clip_val = config['optimizer']['clip_val']
@@ -11,7 +11,7 @@ def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_li
 
     # apply gradient clipping
     if var_list is None:
-        var_list = network.get_parameters()
+        var_list = network.get_parameters(fined_tuned=fined_tuned)
 
     gvs = optimizer.compute_gradients(loss, var_list=var_list)
     gvs = [(tf.clip_by_norm(grad, clip_val), var) for grad, var in gvs]
@@ -27,3 +27,5 @@ def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_li
             outputs = control_flow_ops.with_dependencies([updates], outputs)
 
     return optimizer, outputs
+
+

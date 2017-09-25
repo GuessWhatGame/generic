@@ -1,4 +1,21 @@
 import numpy as np
+import pickle
+
+class GloveEmbeddings(object):
+
+    def __init__(self, file, glove_dim):
+        self.glove = pickle.load(open(file, 'rb'))
+        self.glove_dim = glove_dim
+
+    def get_embeddings(self, tokens):
+        vectors = []
+        for token in tokens:
+            token = token.lower().replace("\'s", "")
+            if token in self.glove:
+                vectors.append(np.array(self.glove[token]))
+            else:
+                vectors.append(np.zeros((self.glove_dim,)))
+        return vectors
 
 def padder(list_of_tokens, seq_length=None, padding_symbol=0, max_seq_length=0):
 
@@ -36,3 +53,4 @@ def padder_3d(list_of_tokens, max_seq_length=0):
         padded_tokens[i, :len(seq), :] = seq
 
     return padded_tokens, max_seq_length
+

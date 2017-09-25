@@ -14,8 +14,9 @@ from generic.utils.file_handlers import pickle_loader
 
 
 class AbstractImgLoader(object):
-    def __init__(self, img_dir):
+    def __init__(self, img_dir, is_raw):
         self.img_dir = img_dir
+        self.is_raw = is_raw
 
     # The goal of the preloading is to pre-st
     def preload(self,picture_id):
@@ -24,6 +25,8 @@ class AbstractImgLoader(object):
     def get_image(self, picture_id, **kwargs):
         pass
 
+    def is_raw_image(self):
+        return self.is_raw
 
 
 class DummyImgLoader(AbstractImgLoader):
@@ -41,7 +44,7 @@ the fc8 dictionary.
 """
 class fcPreloaded(AbstractImgLoader):
     def __init__(self, data_dir, fc8):
-        AbstractImgLoader.__init__(self, data_dir)
+        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
         self.fc8 = fc8
 
     def get_image(self, _, **kwargs):
@@ -50,7 +53,7 @@ class fcPreloaded(AbstractImgLoader):
 
 class fcLoader(AbstractImgLoader):
     def __init__(self, data_dir):
-        AbstractImgLoader.__init__(self, data_dir)
+        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
         self.data_dir = data_dir
         self.image_path = data_dir + ".pkl"
         self.fc8_img = pickle_loader(self.image_path)
@@ -61,7 +64,7 @@ class fcLoader(AbstractImgLoader):
 
 class ConvLoader(AbstractImgLoader):
     def __init__(self, data_dir):
-        AbstractImgLoader.__init__(self, data_dir)
+        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
         self.image_path = os.path.join(data_dir, "{}.npz")
 
     def get_image(self, picture_id, **kwargs):
@@ -70,7 +73,7 @@ class ConvLoader(AbstractImgLoader):
 
 class RawImageLoader(AbstractImgLoader):
     def __init__(self, data_dir, width, height, channel=None, extension="jpg"):
-        AbstractImgLoader.__init__(self, data_dir)
+        AbstractImgLoader.__init__(self, data_dir, is_raw=True)
         self.image_path = os.path.join(self.img_dir, "{}."+extension)
         self.width = width
         self.height = height
@@ -89,7 +92,7 @@ class RawImageLoader(AbstractImgLoader):
 
 class RawCropLoader(AbstractImgLoader):
     def __init__(self, data_dir, width, height, scale, channel=None, extension="jpg"):
-        AbstractImgLoader.__init__(self, data_dir)
+        AbstractImgLoader.__init__(self, data_dir, is_raw=True)
         self.image_path = os.path.join(self.img_dir, "{}."+extension)
         self.width = width
         self.height = height

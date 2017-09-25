@@ -7,7 +7,7 @@ class AbstractNetwork(object):
         self.scope_name = scope_name
         self.device = device
 
-    def get_parameters(self):
+    def get_parameters(self, fined_tuned=None):
         return [v for v in tf.trainable_variables() if self.scope_name in v.name]
 
     def get_sources(self, sess):
