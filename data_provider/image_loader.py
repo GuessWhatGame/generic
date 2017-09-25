@@ -112,3 +112,33 @@ class RawCropLoader(AbstractImgLoader):
 
         return crop
 
+
+
+def get_img_loader(config, image_dir, is_crop=False):
+
+    image_input = config["image_input"]
+
+    if image_input == "features":
+        is_flat = len(config["dim"]) == 1
+        if is_flat:
+            loader = fcLoader(image_dir)
+        else:
+            loader = ConvLoader(image_dir)
+    elif image_input == "raw":
+        if is_crop:
+            loader = RawCropLoader(image_dir,
+                                    height=config["dim"][0],
+                                    width=config["dim"][1],
+                                    scale=config["scale"],
+                                    channel=config.get("channel", None),
+                                    extension=config.get("extension", "jpg"))
+        else:
+            loader = RawImageLoader(image_dir,
+                                    height=config["dim"][0],
+                                    width=config["dim"][1],
+                                    channel=config.get("channel", None),
+                                    extension=config.get("extension", "jpg"))
+    else:
+        assert False, "incorrect image input: {}".format(image_input)
+
+    return loader
