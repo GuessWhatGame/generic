@@ -7,7 +7,11 @@ from generic.data_provider.image_preprocessors import resize_image, scaled_crop_
 from generic.utils.file_handlers import pickle_loader
 
 
-# TODO make image loader more flexible (with crop)
+# Why doing an image loader?
+# Well, there are two reasons:
+#  - first you want to abstract the kind of picture you are using (raw/conv/feature) etc.
+#  One may just want... to load an image!
+#  - One must optimize when to load the image, image loader help you doing so
 
 
 

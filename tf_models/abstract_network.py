@@ -7,7 +7,7 @@ class AbstractNetwork(object):
         self.scope_name = scope_name
         self.device = device
 
-    def get_parameters(self, fined_tuned=None):
+    def get_parameters(self, fine_tuned=None):
         return [v for v in tf.trainable_variables() if self.scope_name in v.name]
 
     def get_sources(self, sess):
@@ -16,8 +16,8 @@ class AbstractNetwork(object):
     def get_inputs(self, sess):
         placeholders = [p for p in sess.graph.get_operations() if "holder" in p.type if self.scope_name in p.name ]
         if self.device is not '':
-            return [p for p in placeholders if p.device[-1] == str(self.device)]
+            return [p for p in placeholders if p.device[-1] == str(self.device)] # use for multi-gpu computation
         return placeholders
 
-    def get_outputs(self):
+    def get_loss(self):
         pass

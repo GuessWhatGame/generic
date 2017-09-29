@@ -1,10 +1,11 @@
 import numpy as np
-import pickle
+from generic.utils.file_handlers import pickle_loader
+
 
 class GloveEmbeddings(object):
 
-    def __init__(self, file, glove_dim):
-        self.glove = pickle.load(open(file, 'rb'))
+    def __init__(self, file, glove_dim=300):
+        self.glove = pickle_loader(file)
         self.glove_dim = glove_dim
 
     def get_embeddings(self, tokens):
