@@ -1,5 +1,6 @@
 import tensorflow as tf
 
+# Note that those packages break dependencies
 from conditional_batch_norm.cbn_pluggin import CBNfromLSTM
 from conditional_batch_norm.conditional_bn import ConditionalBatchNorm
 from conditional_batch_norm.resnet import create_resnet
@@ -16,7 +17,7 @@ def get_image_features(image, question, is_training, scope_name, config):
             or image_input_type == "dummy":
 
         image_out = image
-        if config["image"].get('normalize', False):
+        if config.get('normalize', False):
             image_out = tf.nn.l2_normalize(image, dim=1, name="fc_normalization")
 
     elif image_input_type.startswith("conv") or image_input_type == "raw":
@@ -42,7 +43,7 @@ def get_image_features(image, question, is_training, scope_name, config):
                                                  resnet_version=resnet_version)
 
             image_feature_maps = picture_feature_maps
-            if config["image"].get('normalize', False):
+            if config.get('normalize', False):
                 image_feature_maps = tf.nn.l2_normalize(image_feature_maps, dim=[1, 2, 3])
 
         # Extract feature from 3D-image features
