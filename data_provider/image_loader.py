@@ -125,12 +125,10 @@ def get_img_loader(config, image_dir, is_crop=False):
 
     image_input = config["image_input"]
 
-    if image_input == "features":
-        is_flat = len(config["dim"]) == 1
-        if is_flat:
-            loader = fcLoader(image_dir)
-        else:
-            loader = ConvLoader(image_dir)
+    if image_input in ["fc7", "fc8"]:
+        loader = fcLoader(image_dir)
+    elif image_input == "conv":
+        loader = ConvLoader(image_dir)
     elif image_input == "raw":
         if is_crop:
             loader = RawCropLoader(image_dir,

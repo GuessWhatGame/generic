@@ -1,7 +1,7 @@
 import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
-def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, finetune=list):
+def create_optimizer(network, loss, config, optim=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, finetune=list()):
 
     lrt = config['optimizer']['learning_rate']
     clip_val = config['optimizer']['clip_val']

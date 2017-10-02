@@ -4,28 +4,27 @@ from tensorflow.python.ops.init_ops import UniformUnitScaling, Constant
 
 import tensorflow.contrib.layers as layers
 
+
 def get_embedding(lookup_indices, n_words, n_dim,
                   scope="embedding", reuse=False):
     with tf.variable_scope(scope, reuse=reuse):
-
         with tf.control_dependencies([tf.assert_non_negative(n_words - tf.reduce_max(lookup_indices))]):
             embedding_matrix = tf.get_variable(
-                    'W', [n_words, n_dim],
-                    initializer=tf.random_uniform_initializer(-0.08, 0.08))
+                'W', [n_words, n_dim],
+                initializer=tf.random_uniform_initializer(-0.08, 0.08))
             embedded = tf.nn.embedding_lookup(embedding_matrix, lookup_indices)
             return embedded
 
 
 def fully_connected(inp, n_out, activation=None, scope="fully_connected",
                     weight_initializer=UniformUnitScaling(),
-                    init_bias=0.0, use_bias=True,reuse=False):
-
+                    init_bias=0.0, use_bias=True, reuse=False):
     with tf.variable_scope(scope, reuse=reuse):
         inp_size = int(inp.get_shape()[1])
         shape = [inp_size, n_out]
         weight = tf.get_variable(
-                "W", shape,
-                initializer=weight_initializer)
+            "W", shape,
+            initializer=weight_initializer)
         out = tf.matmul(inp, weight)
 
         if use_bias:
@@ -43,14 +42,9 @@ def fully_connected(inp, n_out, activation=None, scope="fully_connected",
     return out
 
 
-
-
-
-
-
-
 def rank(inp):
     return len(inp.get_shape())
+
 
 def cross_entropy(y_hat, y):
     if rank(y) == 2:
@@ -65,7 +59,7 @@ def cross_entropy(y_hat, y):
 def error(y_hat, y):
     if rank(y) == 1:
         mistakes = tf.not_equal(
-            tf.argmax(y_hat, 1) , tf.cast(y, tf.int64))
+            tf.argmax(y_hat, 1), tf.cast(y, tf.int64))
     elif rank(y) == 2:
         mistakes = tf.not_equal(
             tf.argmax(y_hat, 1), tf.argmax(y, 1))

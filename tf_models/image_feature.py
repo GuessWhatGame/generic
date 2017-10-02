@@ -7,8 +7,8 @@ from conditional_batch_norm.resnet import create_resnet
 
 from generic.tf_models import attention
 
-def get_image_features(image, question, is_training, scope_name, config):
 
+def get_image_features(image, question, is_training, scope_name, config):
     image_input_type = config["image_input"]
 
     # Extract feature from 1D-image feature s
@@ -51,7 +51,7 @@ def get_image_features(image, question, is_training, scope_name, config):
             image_feature_maps = image
 
         # apply attention
-        image_out = attention.attention_factory(image_feature_maps,question, config["attention"])
+        image_out = attention.attention_factory(image_feature_maps, question, config["attention"])
 
     else:
         assert False, "Wrong input type for image"
