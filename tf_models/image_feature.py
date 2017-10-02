@@ -30,7 +30,7 @@ def get_image_features(image, question, is_training, scope_name, config):
             if config["cbn"].get("use_cbn", False):
                 cbn_factory = CBNfromLSTM(question, config['cbn'])
 
-                excluded_scopes = config.get('excluded_scope_names', [])
+                excluded_scopes = config["cbn"].get('excluded_scope_names', [])
                 cbn = ConditionalBatchNorm(cbn_factory, excluded_scope_names=excluded_scopes,
                                            is_training=is_training)
 
