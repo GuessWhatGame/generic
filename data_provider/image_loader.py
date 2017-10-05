@@ -1,90 +1,137 @@
 import os
 from PIL import Image
-
 import numpy as np
 
 from generic.data_provider.image_preprocessors import resize_image, scaled_crop_and_pad
 from generic.utils.file_handlers import pickle_loader
 
 
-# Why doing an image loader?
+# Why doing an image builder/loader?
 # Well, there are two reasons:
-#  - first you want to abstract the kind of picture you are using (raw/conv/feature) etc.
+#  - first you want to abstract the kind of image you are using (raw/conv/feature) when you are loading the dataset/batch.
 #  One may just want... to load an image!
-#  - One must optimize when to load the image, image loader help you doing so
+#  - One must optimize when to load the image for multiprocessing.
+#       You do not want to serialize a 2Go of fc8 features when you create a process
+#       You do not want to load 50Go of images at start
+#
+#   The Builder enables to abstract the kind of image you want to load
+#   The Loader enables to load/process the image when you need it
+#
+#   Enjoy design patterns, it may **this** page of code complex but the it makes the whole project easier! Act Local, Think Global :P
 
 
-
-
-
-class AbstractImgLoader(object):
+class AbstractImgBuilder(object):
     def __init__(self, img_dir, is_raw):
         self.img_dir = img_dir
         self.is_raw = is_raw
 
-    # The goal of the preloading is to pre-st
-    def preload(self,picture_id):
+    def build(self, image_id, filename, **kwargs):
         return self
-
-    def get_image(self, picture_id, **kwargs):
-        pass
 
     def is_raw_image(self):
         return self.is_raw
 
 
-class DummyImgLoader(AbstractImgLoader):
-    def __init__(self, data_dir, size=1000):
-        AbstractImgLoader.__init__(self, data_dir)
+class AbstractImgLoader(object):
+    def __init__(self, img_path):
+        self.img_path = img_path
+
+    def get_image(self, **kwargs):
+        pass
+
+
+
+
+class DummyImgBuilder(AbstractImgBuilder, AbstractImgLoader):
+    def __init__(self, img_dir, size=1000):
+        AbstractImgBuilder.__init__(self, img_dir, is_raw=False)
         self.size = size
 
-    def get_image(self, _, **kwargs):
+    def build(self, image_id, filename, **kwargs):
+        return self
+
+    def get_image(self, **kwargs):
         return np.zeros(self.size)
 
 
-"""Trick to avoid serializing complete fc8 dictionary.
-We wrap the fc8 into a separate object which does not contain
-the fc8 dictionary.
-"""
-class fcPreloaded(AbstractImgLoader):
-    def __init__(self, data_dir, fc8):
-        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
+
+
+
+class fcBuilder(AbstractImgBuilder):
+    def __init__(self, img_path):
+        AbstractImgBuilder.__init__(self, img_path, is_raw=False)
+        self.fc8 = pickle_loader(img_path)
+
+    # Trick to avoid serializing complete fc8 dictionary.
+    # We wrap the fc8 into a separate object which does not contain
+    # the *full* fc8 dictionary.
+
+    def build(self, image_id, filename, **kwargs):
+        """
+        :param image_id: (or object_id) id of the fc8 to load
+        :param filename: N/A
+        :param kwargs: optional -> do fc8 must be present in file
+        :return: fcLoader for the current id
+        """
+
+        one_fc8 = self.fc8.get(image_id, None)
+
+        assert one_fc8 is not None or kwargs.get("optional", True), \
+            "fc8 (id:{}) is missing in file: {}".format(image_id, self.img_dir)
+
+        return fcLoader(self.img_dir, one_fc8)
+
+class fcLoader(AbstractImgLoader):
+    def __init__(self,data_dir, fc8):
+        AbstractImgLoader.__init__(self, data_dir)
         self.fc8 = fc8
 
-    def get_image(self, _, **kwargs):
+    def get_image(self, **kwargs):
+        assert self.fc8 is not None
         return self.fc8
 
 
-class fcLoader(AbstractImgLoader):
-    def __init__(self, data_dir):
-        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
-        self.data_dir = data_dir
-        self.image_path = data_dir + ".pkl"
-        self.fc8_img = pickle_loader(self.image_path)
 
-    def preload(self, picture_id):
-        return fcPreloaded(self.data_dir, self.fc8_img[picture_id])
 
+class ConvBuilder(AbstractImgBuilder):
+    def __init__(self, img_dir):
+        AbstractImgBuilder.__init__(self, img_dir, is_raw=False)
+
+    def build(self, image_id, filename, **kwargs):
+        img_path = os.path.join(self.img_dir, "{}.npz".format(image_id))
+        return ConvLoader(img_path)
 
 class ConvLoader(AbstractImgLoader):
-    def __init__(self, data_dir):
-        AbstractImgLoader.__init__(self, data_dir, is_raw=False)
-        self.image_path = os.path.join(data_dir, "{}.npz")
+    def __init__(self, img_path):
+        AbstractImgLoader.__init__(self, img_path)
 
-    def get_image(self, picture_id, **kwargs):
-        return np.load(self.image_path.format(picture_id)['x'])
+    def get_image(self, **kwargs):
+        return np.load(self.img_path)['x']
 
 
-class RawImageLoader(AbstractImgLoader):
-    def __init__(self, data_dir, width, height, channel=None, extension="jpg"):
-        AbstractImgLoader.__init__(self, data_dir, is_raw=True)
-        self.image_path = os.path.join(self.img_dir, "{}."+extension)
+
+
+class RawImageBuilder(AbstractImgBuilder):
+    def __init__(self, img_dir, width, height, channel=None):
+        AbstractImgBuilder.__init__(self, img_dir, is_raw=True)
         self.width = width
         self.height = height
         self.channel = channel
 
-    def get_image(self, picture_id, **kwargs):
-        img = Image.open(self.image_path.format(picture_id)).convert('RGB')
+    def build(self, image_id, filename, **kwargs):
+        img_path = os.path.join(self.img_dir, filename)
+        return RawImageLoader(img_path, self.width, self.height, channel=None)
+
+class RawImageLoader(AbstractImgLoader):
+    def __init__(self, img_path, width, height, channel=None):
+        AbstractImgLoader.__init__(self, img_path)
+        self.width = width
+        self.height = height
+        self.channel = channel
+
+
+    def get_image(self, **kwargs):
+        img = Image.open(self.img_path).convert('RGB')
 
         img = resize_image(img, self.width , self.height)
         img = np.array(img, dtype=np.float32)
@@ -94,23 +141,36 @@ class RawImageLoader(AbstractImgLoader):
 
         return img
 
-class RawCropLoader(AbstractImgLoader):
-    def __init__(self, data_dir, width, height, scale, channel=None, extension="jpg"):
-        AbstractImgLoader.__init__(self, data_dir, is_raw=True)
-        self.image_path = os.path.join(self.img_dir, "{}."+extension)
+
+class RawCropBuilder(AbstractImgBuilder):
+    def __init__(self, data_dir, width, height, scale, channel=None):
+        AbstractImgBuilder.__init__(self, data_dir, is_raw=True)
         self.width = width
         self.height = height
-        self.scale = scale
         self.channel = channel
+        self.scale = scale
 
-    def get_image(self, object_id, **kwargs):
+    def build(self, object_id, filename, **kwargs):
+        bbox = kwargs["bbox"]
+        img_path = os.path.join(self.img_dir, filename)
+        return RawCropLoader(img_path, self.width, self.height, scale=self.scale, bbox=bbox, channel=None)
 
-        bbox = kwargs['bbox']
-        image_id = kwargs['image_id']
 
-        img = Image.open(self.image_path.format(image_id)).convert('RGB')
 
-        crop = scaled_crop_and_pad(raw_img=img, bbox=bbox, scale=self.scale)
+class RawCropLoader(AbstractImgLoader):
+    def __init__(self, img_path, width, height, scale, bbox, channel=None):
+        AbstractImgLoader.__init__(self, img_path)
+        self.width = width
+        self.height = height
+        self.channel = channel
+        self.bbox = bbox
+        self.scale = scale
+
+    def get_image(self, **kwargs):
+
+        img = Image.open(self.img_path).convert('RGB')
+
+        crop = scaled_crop_and_pad(raw_img=img, bbox=self.bbox, scale=self.scale)
         crop = resize_image(crop, self.width , self.height)
         crop = np.array(crop, dtype=np.float32)
 
@@ -121,28 +181,26 @@ class RawCropLoader(AbstractImgLoader):
 
 
 
-def get_img_loader(config, image_dir, is_crop=False):
+def get_img_builder(config, image_dir, is_crop=False):
 
     image_input = config["image_input"]
 
     if image_input in ["fc7", "fc8"]:
-        loader = fcLoader(image_dir)
+        loader = fcBuilder(image_dir)
     elif image_input == "conv":
-        loader = ConvLoader(image_dir)
+        loader = ConvBuilder(image_dir)
     elif image_input == "raw":
         if is_crop:
-            loader = RawCropLoader(image_dir,
+            loader = RawCropBuilder(image_dir,
                                     height=config["dim"][0],
                                     width=config["dim"][1],
                                     scale=config["scale"],
-                                    channel=config.get("channel", None),
-                                    extension=config.get("extension", "jpg"))
+                                    channel=config.get("channel", None))
         else:
-            loader = RawImageLoader(image_dir,
+            loader = RawImageBuilder(image_dir,
                                     height=config["dim"][0],
                                     width=config["dim"][1],
-                                    channel=config.get("channel", None),
-                                    extension=config.get("extension", "jpg"))
+                                    channel=config.get("channel", None))
     else:
         assert False, "incorrect image input: {}".format(image_input)
 
