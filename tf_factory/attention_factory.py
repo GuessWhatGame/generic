@@ -7,7 +7,7 @@ def get_attention(feature_map, lstm, config, keep_dropout=1):
 
     if attention_mode == "none":
         picture_out = feature_map
-    if attention_mode == "mean":
+    elif attention_mode == "mean":
         picture_out = tf.reduce_mean(feature_map, axis=(1, 2))
     elif attention_mode == "classic":
         picture_out = compute_attention(feature_map,
