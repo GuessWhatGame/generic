@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from neural_toolbox.cbn import CBNfromLSTM
+from neural_toolbox.cbn_pluggin import CBNfromLSTM
 from neural_toolbox.resnet import create_resnet
 from neural_toolbox.cbn import ConditionalBatchNorm
 
