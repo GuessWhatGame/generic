@@ -1,12 +1,10 @@
 import tensorflow as tf
 
-# Note that those packages break dependencies
-from conditional_batch_norm.cbn_pluggin import CBNfromLSTM
-from conditional_batch_norm.conditional_bn import ConditionalBatchNorm
-from conditional_batch_norm.resnet import create_resnet
+from neural_toolbox.cbn import CBNfromLSTM
+from neural_toolbox.resnet import create_resnet
+from neural_toolbox.cbn import ConditionalBatchNorm
 
-from generic.tf_models import attention
-
+from generic.tf_factory.attention_factory import get_attention
 
 def get_image_features(image, question, is_training, scope_name, config):
     image_input_type = config["image_input"]
@@ -51,7 +49,7 @@ def get_image_features(image, question, is_training, scope_name, config):
             image_feature_maps = image
 
         # apply attention
-        image_out = attention.attention_factory(image_feature_maps, question, config["attention"])
+        image_out = get_attention(image_feature_maps, question, config["attention"])
 
     else:
         assert False, "Wrong input type for image"
