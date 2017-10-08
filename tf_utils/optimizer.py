@@ -2,21 +2,29 @@ import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
 
-def create_optimizer(network, loss, config, finetune, optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True):
+def create_optimizer(network, config, finetune, optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True):
 
+    # Retrieve conf
     lrt = config['optimizer']['learning_rate']
     clip_val = config['optimizer'].get('clip_val', 0)
+    weight_decay = config['optimizer'].get('weight_decay', 0)
 
     # create optimizer
     optimizer = optim_cst(learning_rate=lrt)
 
-    # apply gradient clipping
+    # Extract trainable variables if not provided
     if var_list is None:
         var_list = network.get_parameters(finetune=finetune)
 
+    # Apply weight decay
+    loss = network.get_loss()
+    if weight_decay > 0:
+        loss += l2_regularization(var_list, weight_decay=weight_decay)
+
+    # compute gradient
     grad = optimizer.compute_gradients(loss, var_list=var_list)
 
-    # Clip gradient
+    # apply gradient clipping
     if clip_val > 0:
         grad = clip_gradient(grad, clip_val=clip_val)
 
@@ -36,6 +44,7 @@ def create_optimizer(network, loss, config, finetune, optim_cst=tf.train.AdamOpt
 
 def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.train.AdamOptimizer):
 
+    # Retrieve conf
     lrt = config['optimizer']['learning_rate']
     clip_val = config['optimizer'].get('clip_val', 0)
     weight_decay = config['optimizer'].get('weight_decay', 0)
@@ -44,7 +53,6 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     optimizer = optim_cst(learning_rate=lrt)
 
     gradients, losses, accuracies = [], [], []
-
     for network in networks:
 
         # Retrieve trainable variables from network
