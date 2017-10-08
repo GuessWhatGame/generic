@@ -40,10 +40,10 @@ class Evaluator(object):
 
 
     def process(self, sess, iterator, outputs, listener=None):
-        original_outputs = list(outputs)
 
-        if not isinstance(outputs, list):
-            outputs = [outputs]
+        assert isinstance(outputs, list), "outputs must be a list"
+
+        original_outputs = list(outputs)
 
         is_training = any([is_optimizer(x) for x in outputs])
 
@@ -102,38 +102,24 @@ class MultiGPUEvaluator(object):
             List that defines name_scope for each GPU
     """
 
-    def __init__(self, provided_sources, network_scope, name_scopes, writer=None,
+    def __init__(self, provided_sources, name_scopes, writer=None,
                  networks=None, tokenizer=None): #Debug purpose only, do not use here
 
         # Dispatch sources
         self.provided_sources = provided_sources
-        for source in self.provided_sources:
-            for scope in name_scopes:
-                self.multi_gpu_sources.append(scope + '/' + self.network_scope + source)
-
-
-
-
-        self.network_scope = network_scope
         self.name_scopes = name_scopes
-
         self.writer = writer
-        if len(self.network_scope) > 0 and not network_scope.endswith("/"):
-            self.network_scope += "/"
+
         self.multi_gpu_sources = []
+        for source in self.provided_sources:
+            for name_scope in name_scopes:
+                self.multi_gpu_sources.append(os.path.join(name_scope, source))
 
 
-        # Debug tools, do not use here!
+        # Debug tools, do not use in the code!
         self.networks = networks
         self.tokenizer = tokenizer
 
-
-    def append_batch(self, single_batch, name_scope, multi_gpu_batch):
-
-        for k, v in single_batch.items():
-            multi_gpu_batch[name_scope + '/' + self.network_scope + k] = v
-
-        return multi_gpu_batch
 
 
     def process(self, sess, iterator, outputs, listener=None):
@@ -144,46 +130,49 @@ class MultiGPUEvaluator(object):
         # check for optimizer to define training/eval mode
         is_training = any([is_optimizer(x) for x in outputs])
 
+        # Prepare epoch
         n_iter = 1.
         aggregated_outputs = [0.0 for v in outputs if is_scalar(v)]
 
-        try:
-            with tqdm(total=len(iterator)) as pbar:
 
-                while True:
+        scope_to_do = list(self.name_scopes)
+        multi_gpu_batch = dict()
+        for batch in tqdm(iterator):
 
-                    # Generate multi-gpu batch
-                    multi_gpu_batch = {}
-                    for name_scope in self.name_scopes:
-                        batch = next(iterator)
-                        batch['is_training'] = is_training
-                        multi_gpu_batch = self.append_batch(batch, name_scope, multi_gpu_batch)
-                    n_iter += 1
+            assert len(scope_to_do) > 0
 
-                    # Execute the batch
-                    results = self.execute(sess, outputs, multi_gpu_batch)
+            # apply training mode
+            batch['is_training'] = is_training
 
-                    # process the results
-                    i = 0
-                    for var, result in zip(outputs, results):
-                        if is_scalar(var) and var in outputs:
-                            # moving average
-                            aggregated_outputs[i] = ((n_iter - 1.) / n_iter) * aggregated_outputs[i] + result / n_iter
-                            i += 1
+            # update multi-gpu batch
+            name_scope = scope_to_do.pop()
+            for source, v in batch.items():
+                multi_gpu_batch[os.path.join(name_scope, source)] = v
 
-                        elif is_summary(var):  # move into listener?
-                            self.writer.add_summary(result)
+            n_iter += 1
 
-                    pbar.update(len(self.name_scopes))
+            if not scope_to_do: # empty list -> multi_gpu_batch is ready!
 
-        except StopIteration:
-            pass
-        except Exception as e:
-            print(e)
-        finally:
-            if listener is not None:
-                listener.after_epoch(is_training)
-            return aggregated_outputs
+                # Execute the batch
+                results = self.execute(sess, outputs, multi_gpu_batch)
+
+                # reset mini-batch
+                scope_to_do = list(self.name_scopes)
+
+                # process the results
+                i = 0
+                for var, result in zip(outputs, results):
+                    if is_scalar(var) and var in outputs:
+                        # moving average
+                        aggregated_outputs[i] = ((n_iter - 1.) / n_iter) * aggregated_outputs[i] + result / n_iter
+                        i += 1
+
+                    elif is_summary(var):  # move into listener?
+                        self.writer.add_summary(result)
+
+                    # No listener as "results" may arrive in different orders... need to find a way to unshuffle them
+
+        return aggregated_outputs
 
 
     def execute(self, sess, output, batch):

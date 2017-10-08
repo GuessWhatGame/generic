@@ -13,7 +13,7 @@ def create_resnet_saver(networks):
     resnet_vars = dict()
     for network in networks:
         for v in network.get_resnet_parameters():
-            v.name[start:-2] = v
+            resnet_vars[v.name[start:-2]] = v
 
     return tf.train.Saver(resnet_vars)
 

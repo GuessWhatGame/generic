@@ -18,7 +18,7 @@ def create_optimizer(network, loss, config, finetune, optim_cst=tf.train.AdamOpt
 
     # Clip gradient
     if clip_val > 0:
-        grad = clip_gradient(grad, clip_val=[])
+        grad = clip_gradient(grad, clip_val=clip_val)
 
     # update optimizer
     optimizer = optimizer.apply_gradients(grad)
@@ -64,7 +64,7 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
 
     # Clip gradient
     if clip_val > 0:
-        avg_grad = clip_gradient(avg_grad, clip_val=[])
+        avg_grad = clip_gradient(avg_grad, clip_val=clip_val)
 
     # update optimizer
     optimizer = optimizer.apply_gradients(avg_grad)
