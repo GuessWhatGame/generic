@@ -38,6 +38,7 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
 
     lrt = config['optimizer']['learning_rate']
     clip_val = config['optimizer'].get('clip_val', 0)
+    weight_decay = config['optimizer'].get('weight_decay', 0)
 
     # Create optimizer
     optimizer = optim_cst(learning_rate=lrt)
@@ -46,9 +47,16 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
 
     for network in networks:
 
-        # Retrieve gradients
+        # Retrieve trainable variables from network
         train_vars = network.get_parameters(finetune=finetune)
-        grads = optimizer.compute_gradients(network.get_loss(), train_vars)
+
+        # Apply weight decay
+        loss = network.get_loss()
+        if weight_decay > 0:
+            loss += l2_regularization(train_vars, weight_decay=weight_decay)
+
+        # compute gradient
+        grads = optimizer.compute_gradients(loss, train_vars)
         gradients.append(grads)
 
         # Retrieve training loss
@@ -82,6 +90,11 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
 def clip_gradient(gvs, clip_val):
     clipped_gvs = [(tf.clip_by_norm(grad, clip_val), var) for grad, var in gvs]
     return clipped_gvs
+
+def l2_regularization(params, weight_decay):
+    l2_reg = [tf.nn.l2_loss(v) for v  in params]
+    l2_reg = weight_decay * tf.add_n(l2_reg)
+    return l2_reg
 
 def average_gradient(tower_grads):
     """Calculate the average gradient for each shared variable across all towers.
