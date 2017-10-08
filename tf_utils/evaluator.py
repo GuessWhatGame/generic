@@ -86,3 +86,106 @@ class Evaluator(object):
         feed_dict = {self.scope + key + ":0": value for key, value in batch.items() if key in self.provided_sources}
         return sess.run(output, feed_dict=feed_dict)
 
+
+
+class MultiGPUEvaluator(object):
+    """Wrapper for evaluating on multiple GPUOptions
+
+    parameters
+    ----------
+        provided_sources: list of sources
+            Each source has num_gpus placeholders with name:
+            name_scope[gpu_index]/network_scope/source
+        network_scope: str
+            Variable scope of the model
+        name_scopes: list of str
+            List that defines name_scope for each GPU
+    """
+
+    def __init__(self, provided_sources, network_scope, name_scopes, writer=None,
+                 networks=None, tokenizer=None): #Debug purpose only, do not use here
+
+        # Dispatch sources
+        self.provided_sources = provided_sources
+        for source in self.provided_sources:
+            for scope in name_scopes:
+                self.multi_gpu_sources.append(scope + '/' + self.network_scope + source)
+
+
+
+
+        self.network_scope = network_scope
+        self.name_scopes = name_scopes
+
+        self.writer = writer
+        if len(self.network_scope) > 0 and not network_scope.endswith("/"):
+            self.network_scope += "/"
+        self.multi_gpu_sources = []
+
+
+        # Debug tools, do not use here!
+        self.networks = networks
+        self.tokenizer = tokenizer
+
+
+    def append_batch(self, single_batch, name_scope, multi_gpu_batch):
+
+        for k, v in single_batch.items():
+            multi_gpu_batch[name_scope + '/' + self.network_scope + k] = v
+
+        return multi_gpu_batch
+
+
+    def process(self, sess, iterator, outputs, listener=None):
+
+        assert listener is None, "Listener are not yet supported with multi-gpu evaluator"
+        assert isinstance(outputs, list), "outputs must be a list"
+
+        # check for optimizer to define training/eval mode
+        is_training = any([is_optimizer(x) for x in outputs])
+
+        n_iter = 1.
+        aggregated_outputs = [0.0 for v in outputs if is_scalar(v)]
+
+        try:
+            with tqdm(total=len(iterator)) as pbar:
+
+                while True:
+
+                    # Generate multi-gpu batch
+                    multi_gpu_batch = {}
+                    for name_scope in self.name_scopes:
+                        batch = next(iterator)
+                        batch['is_training'] = is_training
+                        multi_gpu_batch = self.append_batch(batch, name_scope, multi_gpu_batch)
+                    n_iter += 1
+
+                    # Execute the batch
+                    results = self.execute(sess, outputs, multi_gpu_batch)
+
+                    # process the results
+                    i = 0
+                    for var, result in zip(outputs, results):
+                        if is_scalar(var) and var in outputs:
+                            # moving average
+                            aggregated_outputs[i] = ((n_iter - 1.) / n_iter) * aggregated_outputs[i] + result / n_iter
+                            i += 1
+
+                        elif is_summary(var):  # move into listener?
+                            self.writer.add_summary(result)
+
+                    pbar.update(len(self.name_scopes))
+
+        except StopIteration:
+            pass
+        except Exception as e:
+            print(e)
+        finally:
+            if listener is not None:
+                listener.after_epoch(is_training)
+            return aggregated_outputs
+
+
+    def execute(self, sess, output, batch):
+        feed_dict = {key + ":0": value for key, value in batch.items() if key in self.multi_gpu_sources}
+        return sess.run(output, feed_dict=feed_dict)

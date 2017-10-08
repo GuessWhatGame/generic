@@ -34,13 +34,13 @@ def get_image_features(image, question, is_training, scope_name, config):
 
             # Create ResNet
             resnet_version = config['resnet_version']
-            picture_feature_maps = create_resnet(image,
+            image_feature_maps = create_resnet(image,
                                                  is_training=is_training,
                                                  scope=scope_name,
                                                  cbn=cbn,
                                                  resnet_version=resnet_version)
 
-            image_feature_maps = picture_feature_maps
+            image_feature_maps = image_feature_maps
             if config.get('normalize', False):
                 image_feature_maps = tf.nn.l2_normalize(image_feature_maps, dim=[1, 2, 3])
 

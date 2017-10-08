@@ -1,10 +1,24 @@
 import os
 import pickle
 
+import tensorflow as tf
+
+def create_resnet_saver(networks):
+
+    if not isinstance(networks, list):
+        networks = [networks]
+
+    start = len(networks[0].scope_name) + 1
+
+    resnet_vars = dict()
+    for network in networks:
+        for v in network.get_resnet_parameters():
+            v.name[start:-2] = v
+
+    return tf.train.Saver(resnet_vars)
 
 def load_checkpoint(sess, saver, args, save_path):
     ckpt_path = save_path.format('params.ckpt')
-
 
     if args.continue_exp:
         if not os.path.exists(save_path.format('checkpoint')):
@@ -24,3 +38,4 @@ def load_checkpoint(sess, saver, args, save_path):
         return 0
 
     return 0
+
