@@ -39,6 +39,8 @@ def create_optimizer(network, config, finetune, optim_cst=tf.train.AdamOptimizer
             updates = tf.group(*update_ops)
             outputs = control_flow_ops.with_dependencies([updates], loss)
 
+    outputs = [outputs, network.get_accuracy()]
+
     return optimizer, outputs
 
 
@@ -53,25 +55,26 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     optimizer = optim_cst(learning_rate=lrt)
 
     gradients, losses, accuracies = [], [], []
-    for network in networks:
+    for i, network in enumerate(networks):
+        with tf.device('gpu:{}'.format(i)):
 
-        # Retrieve trainable variables from network
-        train_vars = network.get_parameters(finetune=finetune)
+            # Retrieve trainable variables from network
+            train_vars = network.get_parameters(finetune=finetune)
 
-        # Apply weight decay
-        loss = network.get_loss()
-        if weight_decay > 0:
-            loss += l2_regularization(train_vars, weight_decay=weight_decay)
+            # Apply weight decay
+            loss = network.get_loss()
+            if weight_decay > 0:
+                loss += l2_regularization(train_vars, weight_decay=weight_decay)
 
-        # compute gradient
-        grads = optimizer.compute_gradients(loss, train_vars)
-        gradients.append(grads)
+            # compute gradient
+            grads = optimizer.compute_gradients(loss, train_vars)
+            gradients.append(grads)
 
-        # Retrieve training loss
-        losses.append(network.get_loss())
+            # Retrieve training loss
+            losses.append(network.get_loss())
 
-        # Retrieve evaluation loss
-        accuracies.append(network.get_accuracy())
+            # Retrieve evaluation loss
+            accuracies.append(network.get_accuracy())
 
     # Synchronize and average gradient/loss/accuracy
     avg_grad = average_gradient(gradients)
