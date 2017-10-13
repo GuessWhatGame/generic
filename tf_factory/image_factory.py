@@ -6,7 +6,7 @@ from neural_toolbox.cbn import ConditionalBatchNorm
 
 from generic.tf_factory.attention_factory import get_attention
 
-def get_image_features(image, question, is_training, scope_name, config):
+def get_image_features(image, question, is_training, scope_name, config, reuse):
     image_input_type = config["image_input"]
 
     # Extract feature from 1D-image feature s
@@ -25,7 +25,7 @@ def get_image_features(image, question, is_training, scope_name, config):
 
             # Create CBN
             cbn = None
-            if config["cbn"].get("use_cbn", False):
+            if "cbn" in config["cbn"] and config["cbn"].get("use_cbn", False):
                 cbn_factory = CBNfromLSTM(question, no_units=config['cbn']["cbn_embedding_size"])
 
                 excluded_scopes = config["cbn"].get('excluded_scope_names', [])
@@ -38,7 +38,8 @@ def get_image_features(image, question, is_training, scope_name, config):
                                                  is_training=is_training,
                                                  scope=scope_name,
                                                  cbn=cbn,
-                                                 resnet_version=resnet_version)
+                                                 resnet_version=resnet_version,
+                                                 resnet_out=config.get('resnet_out', "block4"))
 
             image_feature_maps = image_feature_maps
             if config.get('normalize', False):
@@ -49,7 +50,7 @@ def get_image_features(image, question, is_training, scope_name, config):
             image_feature_maps = image
 
         # apply attention
-        image_out = get_attention(image_feature_maps, question, config["attention"])
+        image_out = get_attention(image_feature_maps, question, config["attention"], reuse)
 
     else:
         assert False, "Wrong input type for image"

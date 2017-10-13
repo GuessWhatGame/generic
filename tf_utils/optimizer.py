@@ -32,46 +32,49 @@ def create_optimizer(network, config, finetune, optim_cst=tf.train.AdamOptimizer
     optimizer = optimizer.apply_gradients(grad)
 
     # add update ops (such as batch norm) to the optimizer call
-    outputs = loss
+    loss_train = loss
     if apply_update_ops:
         update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
         if update_ops:
             updates = tf.group(*update_ops)
-            outputs = control_flow_ops.with_dependencies([updates], loss)
+            loss_train = control_flow_ops.with_dependencies([updates], loss)
 
-    return optimizer, outputs
+    accuracy = network.get_accuracy()
+
+    return optimizer, [loss_train, accuracy], [loss, accuracy]
 
 
 def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.train.AdamOptimizer):
 
     # Retrieve conf
     lrt = config['optimizer']['learning_rate']
-    clip_val = config['optimizer'].get('clip_val', 0)
-    weight_decay = config['optimizer'].get('weight_decay', 0)
+    clip_val = config['optimizer'].get('clip_val', 0.)
+    weight_decay = config['optimizer'].get('weight_decay', 0.)
 
     # Create optimizer
     optimizer = optim_cst(learning_rate=lrt)
 
     gradients, losses, accuracies = [], [], []
-    for network in networks:
+    for i, network in enumerate(networks):
+        with tf.device('gpu:{}'.format(i)):
 
-        # Retrieve trainable variables from network
-        train_vars = network.get_parameters(finetune=finetune)
+            # Retrieve trainable variables from network
+            train_vars = network.get_parameters(finetune=finetune)
 
-        # Apply weight decay
-        loss = network.get_loss()
-        if weight_decay > 0:
-            loss += l2_regularization(train_vars, weight_decay=weight_decay)
+            # Apply weight decay
+            loss = network.get_loss()
+            if weight_decay > 0:
+                loss += l2_regularization(train_vars, weight_decay=weight_decay)
 
-        # compute gradient
-        grads = optimizer.compute_gradients(loss, train_vars)
-        gradients.append(grads)
+            # compute gradient
+            grads = optimizer.compute_gradients(loss, train_vars)
+            gradients.append(grads)
 
-        # Retrieve training loss
-        losses.append(network.get_loss())
+            # Retrieve training loss
+            losses.append(network.get_loss())
 
-        # Retrieve evaluation loss
-        accuracies.append(network.get_accuracy())
+            # Retrieve evaluation loss
+            accuracies.append(network.get_accuracy())
 
     # Synchronize and average gradient/loss/accuracy
     avg_grad = average_gradient(gradients)
@@ -89,9 +92,12 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     if update_ops:
         updates = tf.group(*update_ops)
-        avg_loss = control_flow_ops.with_dependencies([updates], avg_loss)
+        avg_loss_train = control_flow_ops.with_dependencies([updates], avg_loss)
+    else:
+        avg_loss_train = avg_grad
 
-    return optimizer, [avg_loss, avg_accuracy]
+
+    return optimizer, [avg_loss_train, avg_accuracy], [avg_loss, avg_accuracy]
 
 
 
@@ -100,9 +106,10 @@ def clip_gradient(gvs, clip_val):
     return clipped_gvs
 
 def l2_regularization(params, weight_decay):
-    l2_reg = [tf.nn.l2_loss(v) for v  in params]
-    l2_reg = weight_decay * tf.add_n(l2_reg)
-    return l2_reg
+    with tf.variable_scope("l2_normalization"):
+        l2_reg = [tf.nn.l2_loss(v) for v  in params]
+        l2_reg = weight_decay * tf.add_n(l2_reg)
+        return l2_reg
 
 def average_gradient(tower_grads):
     """Calculate the average gradient for each shared variable across all towers.

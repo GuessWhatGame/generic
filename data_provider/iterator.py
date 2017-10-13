@@ -1,8 +1,6 @@
 import math
 import random
-from multiprocessing import Semaphore, Pool
-from generic.data_provider.dataset import AbstractDataset
-from generic.data_provider.batchifier import AbstractBatchifier
+from multiprocessing import Semaphore
 
 #Note from author : we put extra documentation as we beleive that this class can be very useful to other developers
 
@@ -66,13 +64,14 @@ class Iterator(object):
         self.batch_size = batch_size
 
         self.n_batches = int(math.ceil(1. * self.n_examples / self.batch_size))
+        batch = split_batch(games, batch_size, use_padding)
+
+        # no proc
+        # self.it = (batchifier.apply(b )for b in batch)
 
         # Multi_proc
         self.semaphores = Semaphore(no_semaphore)
-
-        batch = split_batch(games, batch_size, use_padding)
         it_batch = sem_iterator(l=batch, sem=self.semaphores)
-
         self.process_iterator = pool.imap(batchifier.apply, it_batch)
 
     def __len__(self):
@@ -84,6 +83,7 @@ class Iterator(object):
     def __next__(self):
         self.semaphores.release()
         return self.process_iterator.next()
+        #return self.it.__next__()
 
     # trick for python 2.X
     def next(self):

@@ -55,3 +55,14 @@ def padder_3d(list_of_tokens, max_seq_length=0):
 
     return padded_tokens, max_seq_length
 
+
+class DummyTokenizer(object):
+    def __init__(self):
+        self.padding_token = 0
+        self.dummy_list = list()
+
+    def encode_question(self, _):
+        return self.dummy_list
+
+    def encode_answer(self, _):
+        return self.dummy_list
