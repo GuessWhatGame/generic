@@ -8,10 +8,10 @@ def create_resnet_saver(networks):
     if not isinstance(networks, list):
         networks = [networks]
 
-    start = len(networks[0].scope_name) + 1
-
     resnet_vars = dict()
     for network in networks:
+
+        start = len(network.scope_name) + 1
         for v in network.get_resnet_parameters():
             resnet_vars[v.name[start:-2]] = v
 

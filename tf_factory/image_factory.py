@@ -6,7 +6,7 @@ from neural_toolbox.cbn import ConditionalBatchNorm
 
 from generic.tf_factory.attention_factory import get_attention
 
-def get_image_features(image, question, is_training, scope_name, config, reuse):
+def get_image_features(image, question, is_training, scope_name, config, dropout_keep=1., reuse=False):
     image_input_type = config["image_input"]
 
     # Extract feature from 1D-image feature s
@@ -50,7 +50,7 @@ def get_image_features(image, question, is_training, scope_name, config, reuse):
             image_feature_maps = image
 
         # apply attention
-        image_out = get_attention(image_feature_maps, question, config["attention"], reuse)
+        image_out = get_attention(image_feature_maps, question, config["attention"], dropout_keep=dropout_keep, reuse=reuse)
 
     else:
         assert False, "Wrong input type for image"

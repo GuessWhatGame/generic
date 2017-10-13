@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.python.ops import control_flow_ops
 
 
-def create_optimizer(network, config, finetune, optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True):
+def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, loss=None):
 
     # Retrieve conf
     lrt = config['optimizer']['learning_rate']
@@ -17,7 +17,9 @@ def create_optimizer(network, config, finetune, optim_cst=tf.train.AdamOptimizer
         var_list = network.get_parameters(finetune=finetune)
 
     # Apply weight decay
-    loss = network.get_loss()
+    if loss is None:
+        loss = network.get_loss()
+
     if weight_decay > 0:
         loss += l2_regularization(var_list, weight_decay=weight_decay)
 

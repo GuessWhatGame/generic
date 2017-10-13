@@ -149,15 +149,18 @@ class MultiGPUEvaluator(object):
             for source, v in batch.items():
                 multi_gpu_batch[os.path.join(name_scope, source)] = v
 
-            n_iter += 1
+
 
             if not scope_to_do: # empty list -> multi_gpu_batch is ready!
+
+                n_iter += 1
 
                 # Execute the batch
                 results = self.execute(sess, outputs, multi_gpu_batch)
 
                 # reset mini-batch
                 scope_to_do = list(self.name_scopes)
+                multi_gpu_batch = dict()
 
                 # process the results
                 i = 0
