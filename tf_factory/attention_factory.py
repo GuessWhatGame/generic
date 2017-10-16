@@ -3,7 +3,7 @@ import tensorflow as tf
 from neural_toolbox.attention import compute_attention, compute_glimpse
 
 
-def get_attention(feature_map, lstm, config, keep_dropout=1, reuse=False):
+def get_attention(feature_map, lstm, config, dropout_keep=1, reuse=False):
     attention_mode = config.get("mode", None)
 
     if attention_mode == "none":
@@ -21,9 +21,9 @@ def get_attention(feature_map, lstm, config, keep_dropout=1, reuse=False):
     elif attention_mode == "glimpse":
         image_out = compute_glimpse(feature_map,
                                     lstm,
-                                    no_glims=config['no_glimpses'],
-                                    glimse_embedding_size=config['no_attention_mlp'],
-                                    keep_dropout=keep_dropout,
+                                    no_glimpse=config['no_glimpses'],
+                                    glimpse_embedding_size=config['no_attention_mlp'],
+                                    keep_dropout=dropout_keep,
                                     reuse=reuse)
 
     else:
