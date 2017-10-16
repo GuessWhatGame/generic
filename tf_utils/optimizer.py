@@ -89,9 +89,6 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     if clip_val > 0:
         avg_grad = clip_gradient(avg_grad, clip_val=clip_val)
 
-    # update optimizer
-    optimizer = optimizer.apply_gradients(avg_grad)
-
     # Apply update ops (such as batchnorm params)
     update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
     with tf.control_dependencies(update_ops):
