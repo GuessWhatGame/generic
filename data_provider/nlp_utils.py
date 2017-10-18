@@ -60,6 +60,9 @@ class DummyTokenizer(object):
     def __init__(self):
         self.padding_token = 0
         self.dummy_list = list()
+        self.no_words = 10
+        self.no_answers = 10
+        self.unknown_answer = 0
 
     def encode_question(self, _):
         return self.dummy_list
