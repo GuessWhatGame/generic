@@ -15,9 +15,6 @@ from generic.data_provider.nlp_utils import DummyTokenizer
 from generic.data_provider.iterator import Iterator
 
 
-
-
-
 def extract_features(
         img_input,
         ft_output,
@@ -43,6 +40,7 @@ def extract_features(
         for one_set in set_type:
     
             print("Load dataset -> set: {}".format(one_set))
+            dataset_args["which_set"] = one_set
             dataset = dataset_cstor(**dataset_args)
     
             # hack dataset to only keep one game by image
@@ -56,7 +54,7 @@ def extract_features(
             dataset.games = games
             no_images = len(games)
     
-            source_name = img_input.name[:-2]
+            source_name = os.path.basename(img_input.name[:-2])
             dummy_tokenizer = DummyTokenizer()
             batchifier = batchifier_cstor(tokenizer=dummy_tokenizer, sources=[source_name])
             iterator = Iterator(dataset,
