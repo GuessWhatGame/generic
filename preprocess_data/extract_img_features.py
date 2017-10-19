@@ -7,13 +7,8 @@ from tqdm import tqdm
 import numpy as np
 import h5py
 
-
 from generic.data_provider.nlp_utils import DummyTokenizer
-
-
-
 from generic.data_provider.iterator import Iterator
-
 
 def extract_features(
         img_input,
@@ -26,8 +21,7 @@ def extract_features(
         set_type,
         batch_size,
         no_threads,
-        gpu_ratio
-):
+        gpu_ratio):
 
     # CPU/GPU option
     cpu_pool = Pool(no_threads, maxtasksperchild=1000)
@@ -50,7 +44,7 @@ def extract_features(
                 if game.image.id not in image_id_set:
                     games.append(game)
                     image_id_set[game.image.id] = 1
-    
+
             dataset.games = games
             no_images = len(games)
     
