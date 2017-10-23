@@ -32,7 +32,9 @@ def extract_features(
     # CPU/GPU option
     cpu_pool = Pool(no_threads, maxtasksperchild=1000)
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_ratio)
-    
+
+
+
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True)) as sess:
         saver = tf.train.Saver()
         saver.restore(sess, network_ckpt)
