@@ -50,6 +50,13 @@ class DummyImgBuilder(AbstractImgBuilder, AbstractImgLoader):
     def get_image(self, **kwargs):
         return np.zeros(self.size)
 
+class ErrorImgLoader(AbstractImgLoader):
+    def __init__(self, img_path):
+        AbstractImgLoader.__init__(self, img_path)
+
+    def get_image(self, **kwargs):
+        assert False, "The image/crop is not available in file: {}".format(self.img_path)
+
 
 
 h5_basename="features.h5"
@@ -63,11 +70,11 @@ class h5FeatureBuilder(AbstractImgBuilder):
         self.h5files = dict()
         self.img2idx = dict()
 
-    def build(self, image_id, filename, **kwargs):
+    def build(self, image_id, filename, optional=True, which_set=None,**kwargs):
 
         # Is the h5 features split into train/val/etc. files or gather into a single file
-        if "which_set" in kwargs:
-            h5filename = kwargs["which_set"] + "_" + h5_basename
+        if which_set is not None:
+            h5filename = which_set + "_" + h5_basename
         else:
             h5filename = h5_basename
 
@@ -96,7 +103,10 @@ class h5FeatureBuilder(AbstractImgBuilder):
             img2idx = self.img2idx[h5filename]
 
         if self.bufferize:
-            return h5FeatureBufloader(h5filepath, h5file=h5file, id=img2idx[image_id])
+            if (optional and image_id in img2idx) or (not optional):
+                return h5FeatureBufloader(h5filepath, h5file=h5file, id=img2idx[image_id])
+            else:
+                return ErrorImgLoader(h5filepath)
         else:
             return h5FeatureLoader(h5filepath, h5file=h5file, id=img2idx[image_id])
 
@@ -193,11 +203,15 @@ class RawCropLoader(AbstractImgLoader):
 
 
 
-def get_img_builder(config, image_dir, is_crop=False, bufferize=False):
+def get_img_builder(config, image_dir, is_crop=False, bufferize=None):
 
     image_input = config["image_input"]
 
-    if image_input in ["fc8","fc7", "conv", "raw_h5"]:
+    if image_input in ["fc8","fc7"]:
+        bufferize = bufferize if bufferize is not None else True
+        loader = h5FeatureBuilder(image_dir, bufferize=bufferize)
+    elif image_input in ["conv", "raw_h5"]:
+        bufferize = bufferize if bufferize is not None else False
         loader = h5FeatureBuilder(image_dir, bufferize=bufferize)
     elif image_input == "raw":
         if is_crop:
