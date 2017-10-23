@@ -21,9 +21,10 @@ from generic.data_provider.image_preprocessors import resize_image, scaled_crop_
 
 
 class AbstractImgBuilder(object):
-    def __init__(self, img_dir, is_raw):
+    def __init__(self, img_dir, is_raw, require_process=False):
         self.img_dir = img_dir
         self.is_raw = is_raw
+        self.require_process = require_process
 
     def build(self, image_id, filename, **kwargs):
         return self
@@ -31,6 +32,8 @@ class AbstractImgBuilder(object):
     def is_raw_image(self):
         return self.is_raw
 
+    def require_multiprocess(self):
+        return self.require_process
 
 class AbstractImgLoader(object):
     def __init__(self, img_path):
@@ -135,7 +138,7 @@ class h5FeatureBufloader(AbstractImgLoader):
 
 class RawImageBuilder(AbstractImgBuilder):
     def __init__(self, img_dir, width, height, channel=None):
-        AbstractImgBuilder.__init__(self, img_dir, is_raw=True)
+        AbstractImgBuilder.__init__(self, img_dir, is_raw=True, require_process=True)
         self.width = width
         self.height = height
         self.channel = channel
@@ -166,7 +169,7 @@ class RawImageLoader(AbstractImgLoader):
 
 class RawCropBuilder(AbstractImgBuilder):
     def __init__(self, data_dir, width, height, scale, channel=None):
-        AbstractImgBuilder.__init__(self, data_dir, is_raw=True)
+        AbstractImgBuilder.__init__(self, data_dir, is_raw=True, require_process=True)
         self.width = width
         self.height = height
         self.channel = channel
