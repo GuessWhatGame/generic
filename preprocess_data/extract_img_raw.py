@@ -55,7 +55,7 @@ def extract_raw(
         filepath = os.path.join(out_dir, "{}_features.h5".format(one_set))
         with h5py.File(filepath, 'w') as f:
 
-            feat_dataset = f.create_dataset('features', shape=[no_images] + image_shape, dtype=np.int32)
+            feat_dataset = f.create_dataset('features', shape=[no_images] + image_shape, dtype=np.float32)
             idx2img = f.create_dataset('idx2img', shape=[no_images], dtype=np.int32)
             pt_hd5 = 0
 
@@ -63,7 +63,7 @@ def extract_raw(
 
                 # Store dataset
                 batch_size = len(batch["raw"])
-                feat_dataset[pt_hd5: pt_hd5 + batch_size] = batch[source_name].astype(np.float32)
+                feat_dataset[pt_hd5: pt_hd5 + batch_size] = batch[source_name]
 
                 # Store idx to image.id
                 for i, game in enumerate(batch["raw"]):

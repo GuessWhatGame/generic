@@ -145,10 +145,10 @@ class RawImageBuilder(AbstractImgBuilder):
 
     def build(self, image_id, filename, **kwargs):
         img_path = os.path.join(self.img_dir, filename)
-        return RawImageLoader(img_path, self.width, self.height, channel=None)
+        return RawImageLoader(img_path, self.width, self.height, channel=self.channel)
 
 class RawImageLoader(AbstractImgLoader):
-    def __init__(self, img_path, width, height, channel=None):
+    def __init__(self, img_path, width, height, channel):
         AbstractImgLoader.__init__(self, img_path)
         self.width = width
         self.height = height
@@ -178,12 +178,12 @@ class RawCropBuilder(AbstractImgBuilder):
     def build(self, object_id, filename, **kwargs):
         bbox = kwargs["bbox"]
         img_path = os.path.join(self.img_dir, filename)
-        return RawCropLoader(img_path, self.width, self.height, scale=self.scale, bbox=bbox, channel=None)
+        return RawCropLoader(img_path, self.width, self.height, scale=self.scale, bbox=bbox, channel=self.channel)
 
 
 
 class RawCropLoader(AbstractImgLoader):
-    def __init__(self, img_path, width, height, scale, bbox, channel=None):
+    def __init__(self, img_path, width, height, scale, bbox, channel):
         AbstractImgLoader.__init__(self, img_path)
         self.width = width
         self.height = height
