@@ -52,7 +52,7 @@ class ResnetModel(AbstractNetwork):
         # There is no clean way to only returns the ResNet parameters by only using the ResNet variable names...
         return [v for v in tf.global_variables() if self.scope_name in v.name and
                 ('resnet' in v.name and
-                 not 'cbn_input' in v.name and
-                 not 'Adam' in v.name and
+                 'cbn_input' not in v.name and
+                 'Adam' not in v.name and
                  "local_step" not in v.name and
                  "moving_mean/biased" not in v.name)]
