@@ -25,7 +25,6 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     if weight_decay > 0:
         training_loss = loss + l2_regularization(var_list, weight_decay=weight_decay)
 
-
     # compute gradient
     grad = optimizer.compute_gradients(training_loss, var_list=var_list)
 
@@ -33,13 +32,13 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     if clip_val > 0:
         grad = clip_gradient(grad, clip_val=clip_val)
 
+    # Apply gradients
+    optimize = optimizer.apply_gradients(grad)
+
     # add update ops (such as batch norm) to the optimizer call
     if apply_update_ops:
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(update_ops):
-            optimize = optimizer.apply_gradients(grad)
-    else:
-        optimize = optimizer.apply_gradients(grad)
+        update_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        optimize = tf.group(optimize, update_op)
 
     accuracy = network.get_accuracy()
 
@@ -89,10 +88,12 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     if clip_val > 0:
         avg_grad = clip_gradient(avg_grad, clip_val=clip_val)
 
+    # Apply gradients
+    optimize = optimizer.apply_gradients(avg_grad)
+
     # Apply update ops (such as batchnorm params)
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
-        optimize = optimizer.apply_gradients(avg_grad)
+    update_op = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+    optimize = tf.group(optimize, update_op)
 
     return optimize, [avg_loss, avg_accuracy]
 
