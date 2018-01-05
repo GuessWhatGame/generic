@@ -88,3 +88,36 @@ class Iterator(object):
     # trick for python 2.X
     def next(self):
         return self.__next__()
+
+
+# TODO Fuse with Iterator
+class BasicIterator(object):
+    """Provides an generic multithreaded iterator over the dataset."""
+
+    def __init__(self, dataset, batch_size, batchifier, use_padding=False):
+
+        # Filtered games
+        games = dataset.get_data()
+        games = batchifier.filter(games)
+
+        self.n_examples = len(games)
+        self.batch_size = batch_size
+
+        self.n_batches = int(math.ceil(1. * self.n_examples / self.batch_size))
+        batch = split_batch(games, batch_size, use_padding)
+
+        # no proc
+        self.it = (batchifier.apply(b )for b in batch)
+
+    def __len__(self):
+        return self.n_batches
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        return self.it.__next__()
+
+    # trick for python 2.X
+    def next(self):
+        return self.__next__()
