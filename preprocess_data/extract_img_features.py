@@ -67,8 +67,13 @@ def extract_features(
                 ft_dataset = f.create_dataset('features', shape=[no_images] + ft_shape, dtype=np.float32)
                 idx2img = f.create_dataset('idx2img', shape=[no_images], dtype=np.int32)
                 pt_hd5 = 0
-    
+
+                i = 0
+
                 for batch in tqdm(iterator):
+
+                    i += 1
+
                     feat = sess.run(ft_output, feed_dict={img_input: numpy.array(batch[source_name])})
     
                     # Store dataset
@@ -83,6 +88,5 @@ def extract_features(
                     pt_hd5 += batch_size
                 print("Start dumping file: {}".format(filepath))
             print("Finished dumping file: {}".format(filepath))
-    
-    
+
     print("Done!")

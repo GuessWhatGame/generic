@@ -5,7 +5,7 @@ import os
 
 from  generic.utils.logger import create_logger
 
-def load_config(config_file, exp_dir):
+def load_config(config_file, exp_dir, args=None):
     with open(config_file, 'rb') as f_config:
         config_str = f_config.read()
         exp_identifier = hashlib.md5(config_str).hexdigest()
@@ -19,6 +19,10 @@ def load_config(config_file, exp_dir):
     logger = create_logger(save_path.format('train.log'))
     logger.info("Config Hash {}".format(exp_identifier))
     logger.info(config)
+
+    if args is not None:
+        for key, val in vars(args).items():
+            logger.info("{} : {}".format(key, val))
 
     # set seed
     set_seed(config)

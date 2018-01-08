@@ -18,10 +18,10 @@ def get_image_features(image, question, is_training, scope_name, config, dropout
         if config.get('normalize', False):
             image_out = tf.nn.l2_normalize(image, dim=1, name="fc_normalization")
 
-    elif image_input_type.startswith("conv") or image_input_type == "raw":
+    elif image_input_type.startswith("conv") or image_input_type.startswith("raw"):
 
         # Extract feature from raw images
-        if image_input_type == "raw":
+        if image_input_type.startswith("raw"):
 
             # Create CBN
             cbn = None

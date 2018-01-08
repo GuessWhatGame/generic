@@ -9,6 +9,9 @@ def get_attention(feature_map, lstm, config, dropout_keep=1, reuse=False):
     if attention_mode == "none":
         image_out = feature_map
 
+    elif attention_mode == "max":
+        image_out = tf.reduce_max(feature_map, axis=(1, 2))
+
     elif attention_mode == "mean":
         image_out = tf.reduce_mean(feature_map, axis=(1, 2))
 
@@ -16,6 +19,7 @@ def get_attention(feature_map, lstm, config, dropout_keep=1, reuse=False):
         image_out = compute_attention(feature_map,
                                       lstm,
                                       no_mlp_units=config['no_attention_mlp'],
+                                      fuse_mode=config['fuse_mode'],
                                       reuse=reuse)
 
     elif attention_mode == "glimpse":
