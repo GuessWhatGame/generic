@@ -105,13 +105,14 @@ class h5FeatureBuilder(AbstractImgBuilder):
             h5file = self.h5files[h5filename]
             img2idx = self.img2idx[h5filename]
 
-        if self.bufferize:
-            if (optional and image_id in img2idx) or (not optional):
+        if optional and image_id in img2idx or (not optional):
+            if self.bufferize:
                 return h5FeatureBufloader(h5filepath, h5file=h5file, id=img2idx[image_id])
             else:
-                return ErrorImgLoader(h5filepath)
+                return h5FeatureLoader(h5filepath, h5file=h5file, id=img2idx[image_id])
         else:
-            return h5FeatureLoader(h5filepath, h5file=h5file, id=img2idx[image_id])
+            return None
+
 
 # Load while creating batch
 class h5FeatureLoader(AbstractImgLoader):
