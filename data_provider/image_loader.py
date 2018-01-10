@@ -67,11 +67,12 @@ h5_feature_key="features"
 h5_idx_key="idx2img"
 
 class h5FeatureBuilder(AbstractImgBuilder):
-    def __init__(self, img_dir, bufferize):
+    def __init__(self, img_dir, bufferize, scale):
         AbstractImgBuilder.__init__(self, img_dir, is_raw=False)
         self.bufferize = bufferize
         self.h5files = dict()
         self.img2idx = dict()
+        self.scale = scale
 
     def build(self, image_id, filename, optional=True, which_set=None,**kwargs):
 
@@ -211,12 +212,18 @@ def get_img_builder(config, image_dir, is_crop=False, bufferize=None):
 
     image_input = config["image_input"]
 
+    scale = None
+    if is_crop:
+        scale = config["scale"]
+
     if image_input in ["fc8","fc7"]:
         bufferize = bufferize if bufferize is not None else True
-        loader = h5FeatureBuilder(image_dir, bufferize=bufferize)
+        loader = h5FeatureBuilder(image_dir, bufferize=bufferize, scale=scale)
+
     elif image_input in ["conv", "raw_h5"]:
         bufferize = bufferize if bufferize is not None else False
-        loader = h5FeatureBuilder(image_dir, bufferize=bufferize)
+        loader = h5FeatureBuilder(image_dir, bufferize=bufferize, scale=scale)
+
     elif image_input == "raw":
         if is_crop:
             loader = RawCropBuilder(image_dir,
