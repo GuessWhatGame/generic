@@ -1,4 +1,4 @@
-from PIL import Image
+from PIL import Image, ImageColor
 import numpy as np
 
 def resize_image(img, width, height):
@@ -48,8 +48,11 @@ def scaled_crop_and_pad(bbox, raw_img, scale=1.0):
 
     # rescaling the crop
     max_side = max(crop_w, crop_h)
-    background = Image.new('RGB', (max_side, max_side), (0, 0, 0))
+
+    black_color = ImageColor.getcolor("black", crop.mode)
+    background = Image.new(crop.mode, (max_side, max_side), black_color)
     background.paste(im=crop, box=(((max_side - crop_w) // 2), (max_side - crop_h) // 2))
+
     return background
 
 
