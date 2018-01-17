@@ -8,6 +8,7 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     lrt = config['learning_rate']
     clip_val = config.get('clip_val', 0.)
     weight_decay = config.get('weight_decay', 0.)
+    weight_decay_remove = config.get('weight_decay_remove', [])
 
     # create optimizer
     optimizer = optim_cst(learning_rate=lrt)
@@ -23,7 +24,7 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     # Apply weight decay
     training_loss = loss
     if weight_decay > 0:
-        training_loss = loss + l2_regularization(var_list, weight_decay=weight_decay)
+        training_loss = loss + l2_regularization(var_list, weight_decay=weight_decay, weight_decay_remove=weight_decay_remove)
 
     # compute gradient
     grad = optimizer.compute_gradients(training_loss, var_list=var_list)
@@ -106,9 +107,14 @@ def l2_regularization(params, weight_decay, weight_decay_remove=list()):
     with tf.variable_scope("l2_normalization"):
         params = [v for v in params if
                       not any([(needle in v.name) for needle in weight_decay_remove])]
-        regularizer = tfc_layers.l2_regularizer(scale=weight_decay)
 
-        return tfc_layers.apply_regularization(regularizer, weights_list=params)
+        if params:
+            regularizer = tfc_layers.l2_regularizer(scale=weight_decay)
+            weight_decay =  tfc_layers.apply_regularization(regularizer, weights_list=params)
+        else:
+            weight_decay = 0
+
+        return weight_decay
 
 def average_gradient(tower_grads):
     """Calculate the average gradient for each shared variable across all towers.
