@@ -1,6 +1,6 @@
 import tensorflow as tf
-from tensorflow.python.ops import control_flow_ops
 import tensorflow.contrib.layers as tfc_layers
+
 
 def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, loss=None):
 
@@ -98,10 +98,10 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     return optimize, [avg_loss, avg_accuracy]
 
 
-
 def clip_gradient(gvs, clip_val):
     clipped_gvs = [(tf.clip_by_norm(grad, clip_val), var) for grad, var in gvs]
     return clipped_gvs
+
 
 def l2_regularization(params, weight_decay, weight_decay_remove=list()):
     with tf.variable_scope("l2_normalization"):
@@ -115,6 +115,7 @@ def l2_regularization(params, weight_decay, weight_decay_remove=list()):
             weight_decay = 0
 
         return weight_decay
+
 
 def average_gradient(tower_grads):
     """Calculate the average gradient for each shared variable across all towers.
