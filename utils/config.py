@@ -41,6 +41,40 @@ def get_config_from_xp(exp_dir, identifier):
         return json.load(f)
 
 
+def get_recursively(search_dict, field, no_field_recursive=False):
+    """
+    Takes a dict with nested lists and dicts,
+    and searches all dicts for a key of the field
+    provided.
+    """
+    fields_found = []
+
+    for key, value in search_dict.items():
+
+        if key == field:
+
+            if no_field_recursive \
+                    and (isinstance(value, dict) or isinstance(key, list)):
+                continue
+
+            fields_found.append(value)
+
+        elif isinstance(value, dict):
+            results = get_recursively(value, field, no_field_recursive)
+            for result in results:
+                fields_found.append(result)
+
+        elif isinstance(value, list):
+            for item in value:
+                if isinstance(item, dict):
+                    more_results = get_recursively(item, field, no_field_recursive)
+                    for another_result in more_results:
+                        fields_found.append(another_result)
+
+    return fields_found
+
+
+
 def set_seed(config):
     import numpy as np
     import tensorflow as tf
