@@ -24,8 +24,10 @@ def batchifier_split_helper(games, split_mode):
                 new_game.questions = [q]
                 new_game.question_ids = [i]
                 new_game.answers = [a]
+                new_game.is_full_dialogue = False
 
                 new_games.append(new_game)
+
 
     # One sample = Subset of questions
     elif split_mode == BatchifierSplitMode.DialogueHistory:
@@ -35,6 +37,7 @@ def batchifier_split_helper(games, split_mode):
                 new_game.questions = game.questions[:i + 1]
                 new_game.question_ids = game.question_ids[:i + 1]
                 new_game.answers = game.answers[:i + 1]
+                new_game.is_full_dialogue = len(game.question_ids) == len(new_game.question_ids)
 
                 new_games.append(new_game)
 
