@@ -20,6 +20,7 @@ def get_attention(feature_map, lstm, config, dropout_keep=1, reuse=False):
                                       lstm,
                                       no_mlp_units=config['no_attention_mlp'],
                                       fuse_mode=config['fuse_mode'],
+                                      keep_dropout=dropout_keep,
                                       reuse=reuse)
 
     elif attention_mode == "glimpse":
