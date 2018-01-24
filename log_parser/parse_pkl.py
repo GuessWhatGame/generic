@@ -1,6 +1,6 @@
 import os
-import re
 import argparse
+import time
 from jinja2 import Template
 from shutil import copyfile
 import numpy as np
@@ -16,7 +16,7 @@ if __name__ == '__main__':
     parser.add_argument("-metric", type=str, default="error", help='Define your metric (error/accuracy/loss)')
     parser.add_argument("-round", type=int, default=3, help='Round after X decimal')
     parser.add_argument("-only_finished", type=bool, default=True, help='Only report logs with test scores')
-
+    parser.add_argument("-max_hour", type=int, help='Only report logs with test scores')
 
     args = parser.parse_args()
 
@@ -32,6 +32,7 @@ if __name__ == '__main__':
     log_directories = [f for f in os.listdir(directory_path) if os.path.isdir(os.path.join(directory_path, f))]
 
     no_res = "n/a"
+    now = time.time()
 
     if not os.path.exists(config_dir):
         os.makedirs(config_dir)
@@ -48,8 +49,14 @@ if __name__ == '__main__':
         try:
             data = pickle_loader(pkl_file)
             config = data["config"]
+
+            if args.max_hour is not None and\
+                 os.stat(pkl_file).st_mtime > now - args.max_hour * 3600:
+                print("Ignore file : {} - status file is too old".format(pkl_file))
+                continue
+
         except FileNotFoundError:
-            print("Ignore directory : {} - status file not found".format(log_directory))
+            print("Ignore file : {} - status file not found".format(pkl_file))
             continue
 
         print("Parsing status.pkl in directory {}...".format(log_directory))
@@ -64,7 +71,7 @@ if __name__ == '__main__':
                                                data[metric]["test"]
 
         # store basic info
-        xp = {}
+        xp = dict()
         xp["hash_id"] = data["hash_id"]
         xp["name"] = config["name"]
         xp["epoch"] = best_accuracy_idx+1

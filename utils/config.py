@@ -18,6 +18,7 @@ def load_config(config_file, exp_dir, args=None):
     # create logger
     logger = create_logger(save_path.format('train.log'))
     logger.info("Config Hash {}".format(exp_identifier))
+    logger.info("Config name : {}".format(config["name"]))
     logger.info(config)
 
     if args is not None:
