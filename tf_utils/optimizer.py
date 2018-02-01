@@ -7,7 +7,8 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     # Retrieve conf
     lrt = config['learning_rate']
     clip_val = config.get('clip_val', 0.)
-    weight_decay = config.get('weight_decay', 0.)
+    weight_decay = config['weight_decay']
+    weight_decay_add = config['weight_decay_add']
     weight_decay_remove = config.get('weight_decay_remove', [])
 
     # create optimizer
@@ -24,7 +25,9 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     # Apply weight decay
     training_loss = loss
     if weight_decay > 0:
-        training_loss = loss + l2_regularization(var_list, weight_decay=weight_decay, weight_decay_remove=weight_decay_remove)
+        training_loss = loss + l2_regularization(var_list, weight_decay=weight_decay,
+                                                 weight_decay_add=weight_decay_add,
+                                                 weight_decay_remove=weight_decay_remove)
 
     # compute gradient
     grad = optimizer.compute_gradients(training_loss, var_list=var_list)
@@ -51,7 +54,8 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     # Retrieve conf
     lrt = config['learning_rate']
     clip_val = config.get('clip_val', 0.)
-    weight_decay = config.get('weight_decay', 0.)
+    weight_decay = config['weight_decay']
+    weight_decay_add = config['weight_decay_add']
     weight_decay_remove = config.get('weight_decay_remove', [])
 
     # Create optimizer
@@ -69,8 +73,9 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
 
             training_loss = loss
             if weight_decay > 0:
-                training_loss += l2_regularization(train_vars, weight_decay=weight_decay, weight_decay_remove=weight_decay_remove)
-
+                training_loss += l2_regularization(train_vars, weight_decay=weight_decay,
+                                                 weight_decay_add=weight_decay_add,
+                                                 weight_decay_remove=weight_decay_remove)
             # compute gradient
             grads = optimizer.compute_gradients(training_loss, train_vars)
             gradients.append(grads)
@@ -103,9 +108,11 @@ def clip_gradient(gvs, clip_val):
     return clipped_gvs
 
 
-def l2_regularization(params, weight_decay, weight_decay_remove=list()):
+def l2_regularization(params, weight_decay, weight_decay_add=list(), weight_decay_remove=list()):
     with tf.variable_scope("l2_normalization"):
+
         params = [v for v in params if
+                          any([(needle in v.name) for needle in weight_decay_add]) and
                       not any([(needle in v.name) for needle in weight_decay_remove])]
 
         if params:
