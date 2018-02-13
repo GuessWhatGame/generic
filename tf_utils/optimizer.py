@@ -1,8 +1,12 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as tfc_layers
 
-
-def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOptimizer, var_list=None, apply_update_ops=True, loss=None):
+def create_optimizer(network, config, finetune=list(),
+                     optim_cst=tf.train.AdamOptimizer,
+                     var_list=None,
+                     accumulate_gradient=False,
+                     apply_update_ops=True,
+                     loss=None):
 
     # Retrieve conf
     lrt = config['learning_rate']
@@ -36,20 +40,34 @@ def create_optimizer(network, config, finetune=list(), optim_cst=tf.train.AdamOp
     if clip_val > 0:
         grad = clip_gradient(grad, clip_val=clip_val)
 
-    # Apply gradients
-    if apply_update_ops:
-        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-        with tf.control_dependencies(update_ops):
-            optimize = optimizer.apply_gradients(grad)
+    # Compute accumulated gradient
+    if accumulate_gradient:
+        zero, acc, update = get_accumulate_gradient_ops(grad)
+
+        # update ops after each accumulation step
+        if apply_update_ops:
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(acc + update_ops):
+                acc = tf.no_op()
+
+        optimize = (zero, acc, optimizer.apply_gradients(update))
+
+    # Compute classic gradient
     else:
-        optimize = optimizer.apply_gradients(grad)
+        if apply_update_ops:
+            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            with tf.control_dependencies(update_ops):
+                optimize = optimizer.apply_gradients(grad)
+        else:
+            optimize = optimizer.apply_gradients(grad)
 
     accuracy = network.get_accuracy()
 
     return optimize, [loss, accuracy]
 
 
-def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.train.AdamOptimizer):
+def create_multi_gpu_optimizer(networks, config, finetune=list(), accumulate_gradient=False, optim_cst=tf.train.AdamOptimizer):
+#TODO implement accumulated gradient
 
     # Retrieve conf
     lrt = config['learning_rate']
@@ -95,12 +113,39 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), optim_cst=tf.t
     if clip_val > 0:
         avg_grad = clip_gradient(avg_grad, clip_val=clip_val)
 
-    # Apply gradients
-    update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-    with tf.control_dependencies(update_ops):
-        optimize = optimizer.apply_gradients(avg_grad)
+    if accumulate_gradient:
+        zero, acc, update = get_accumulate_gradient_ops(avg_grad)
+
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(acc + update_ops):
+            acc = tf.no_op()
+
+        optimize = (zero, acc, optimizer.apply_gradients(update))
+
+        assert False, "Not (yet) tested..."
+
+    else:
+        # Apply gradients
+        update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+        with tf.control_dependencies(update_ops):
+            optimize = optimizer.apply_gradients(avg_grad)
 
     return optimize, [avg_loss, avg_accuracy]
+
+
+#https://stackoverflow.com/questions/46772685/how-to-accumulate-gradients-in-tensorflow
+def get_accumulate_gradient_ops(gvs):
+
+    # zero initalizer
+    var_list = [gv[1] for gv in gvs]
+    accum_vars = [tf.Variable(tf.zeros_like(v.initialized_value()), trainable=False) for v in var_list]
+    zero_ops = [v.assign(tf.zeros_like(v)) for v in accum_vars]
+
+    # create acc/update operations 
+    accum_ops = [accum_vars[i].assign_add(gv[0]) for i, gv in enumerate(gvs)]
+    train_ops = [(accum_vars[i], gv[1]) for i, gv in enumerate(gvs)]
+
+    return zero_ops, accum_ops, train_ops
 
 
 def clip_gradient(gvs, clip_val):
