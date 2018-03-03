@@ -56,3 +56,11 @@ def scaled_crop_and_pad(bbox, raw_img, scale=1.0):
     return background
 
 
+def scale_bbox(bbox, im_width, im_height):
+    new_bbox = bbox
+    new_bbox[0] /= im_width
+    new_bbox[2] /= im_width
+    new_bbox[1] /= im_height
+    new_bbox[3] /= im_height
+
+    return new_bbox
