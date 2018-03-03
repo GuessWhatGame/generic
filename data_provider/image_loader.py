@@ -201,8 +201,9 @@ class RawCropLoader(AbstractImgLoader):
         crop = resize_image(crop, self.width , self.height)
         crop = np.array(crop, dtype=np.float32)
 
+        # should it be before/after the padding?
         if self.channel is not None:
-            crop -= self.channel[None, None, :]
+            img -= self.channel[None, None, :]
 
         return crop
 
