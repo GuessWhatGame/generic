@@ -4,6 +4,20 @@ import numpy as np
 def resize_image(img, width, height):
     return img.resize((width, height), resample=Image.BILINEAR)
 
+
+def gw2coco_bbox(guesswhat_bbox, width, height):
+
+   coco_bbox = np.copy(guesswhat_bbox)
+
+   coco_bbox[0] = (coco_bbox[0]+1) * width / 2
+   coco_bbox[1] = height - (coco_bbox[1]+coco_bbox[3]+1)*height/2
+
+   coco_bbox[2] = coco_bbox[2] * width / 2
+   coco_bbox[3] = coco_bbox[3] * height / 2
+
+   return coco_bbox
+
+
 def get_spatial_feat(bbox, im_width, im_height):
     # Rescale features fom -1 to 1
 
