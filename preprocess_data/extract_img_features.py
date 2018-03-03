@@ -10,6 +10,7 @@ import h5py
 from generic.data_provider.nlp_utils import DummyTokenizer
 from generic.data_provider.iterator import Iterator
 
+
 def extract_features(
         img_input,
         ft_output,
@@ -60,7 +61,11 @@ def extract_features(
             #  CREATE FEATURES
             ############################
             print("Start computing image features...")
-            filepath = os.path.join(out_dir, "{}_features.h5".format(one_set))
+            if one_set == "all":
+                filepath = os.path.join(out_dir, "features.h5")
+            else:
+                filepath = os.path.join(out_dir, "{}_features.h5".format(one_set))
+
             with h5py.File(filepath, 'w') as f:
 
                 ft_shape = [int(dim) for dim in ft_output.get_shape()[1:]]
