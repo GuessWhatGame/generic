@@ -8,7 +8,6 @@ def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
         assert len(input1.shape) == len(input2.shape) and len(input1.shape) == 2
 
     fusing_mode = config.get("mode", None)
-    need_dropout = False
 
     if fusing_mode == "none":
         if input1 is None:
@@ -31,12 +30,11 @@ def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
         fuse_out = fuse_by_vis(input1,input2,
                                 projection_size=config['projection_size'],
                                 apply_proj1=config.get('apply_proj1',True),
-                                apply_proj2=config.get('apply_proj2', True),
-                                output_size=config['output_size'],
+                                apply_proj2=config.get('apply_proj2',True),
+                                output_size=config.get('output_size', 0),
                                 dropout_keep=dropout_keep,
                                 reuse=reuse)
-        need_dropout = True
     else:
         assert False, "Invalid fusing mode '{}'".format(fusing_mode)
 
-    return fuse_out, need_dropout
+    return fuse_out
