@@ -56,6 +56,7 @@ class Iterator(object):
         # Filtered games
         games = dataset.get_data()
         games = batchifier.filter(games)
+        games = batchifier.split(games)
 
         if shuffle:
             random.shuffle(games)

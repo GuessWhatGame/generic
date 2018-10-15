@@ -26,7 +26,7 @@ def get_image_features(image, question, is_training, scope_name, config, dropout
             # Create CBN
             cbn = None
             if "cbn" in config["cbn"] and config["cbn"].get("use_cbn", False):
-                cbn_factory = CBNfromLSTM(question, no_units=config['cbn']["cbn_embedding_size"])
+                cbn_factory = CBNfromLSTM(question, no_units=config['cbn']["cbn_embedding_size"], dropout_keep=dropout_keep)
 
                 excluded_scopes = config["cbn"].get('excluded_scope_names', [])
                 cbn = ConditionalBatchNorm(cbn_factory, excluded_scope_names=excluded_scopes,
@@ -51,6 +51,7 @@ def get_image_features(image, question, is_training, scope_name, config, dropout
 
         # apply attention
         image_out = get_attention(image_feature_maps, question,
+                                  is_training=is_training,
                                   config=config["attention"],
                                   dropout_keep=dropout_keep,
                                   reuse=reuse)

@@ -10,6 +10,7 @@ import h5py
 from generic.data_provider.nlp_utils import DummyTokenizer
 from generic.data_provider.iterator import Iterator
 
+
 def extract_features(
         img_input,
         ft_output,
@@ -49,7 +50,13 @@ def extract_features(
 
             dataset.games = games
             no_images = len(games)
-    
+
+            #TODO find a more generic approach
+            if type(dataset.games[0].image.id) is int:
+                image_id_type = np.int32
+            else:
+                image_id_type = h5py.special_dtype(vlen=type(dataset.games[0].image.id))
+
             source_name = os.path.basename(img_input.name[:-2])
             dummy_tokenizer = DummyTokenizer()
             batchifier = batchifier_cstor(tokenizer=dummy_tokenizer, sources=[source_name])
@@ -62,15 +69,23 @@ def extract_features(
             #  CREATE FEATURES
             ############################
             print("Start computing image features...")
-            filepath = os.path.join(out_dir, "{}_features.h5".format(one_set))
-            with h5py.File(filepath, 'w') as f:
+            if one_set == "all":
+                filepath = os.path.join(out_dir, "features.h5")
+            else:
+                filepath = os.path.join(out_dir, "{}_features.h5".format(one_set))
 
+            with h5py.File(filepath, 'w') as f:
                 ft_shape = [int(dim) for dim in ft_output.get_shape()[1:]]
                 ft_dataset = f.create_dataset('features', shape=[no_images] + ft_shape, dtype=np.float32)
-                idx2img = f.create_dataset('idx2img', shape=[no_images], dtype=np.int32)
+                idx2img = f.create_dataset('idx2img', shape=[no_images], dtype=image_id_type)
                 pt_hd5 = 0
-    
+
+                i = 0
+
                 for batch in tqdm(iterator):
+
+                    i += 1
+
                     feat = sess.run(ft_output, feed_dict={img_input: numpy.array(batch[source_name])})
     
                     # Store dataset
@@ -85,6 +100,5 @@ def extract_features(
                     pt_hd5 += batch_size
                 print("Start dumping file: {}".format(filepath))
             print("Finished dumping file: {}".format(filepath))
-    
-    
+
     print("Done!")
