@@ -18,6 +18,7 @@ def extract_features(
         dataset_cstor,
         dataset_args,
         batchifier_cstor,
+        batchifier_args,
         out_dir,
         set_type,
         batch_size,
@@ -27,8 +28,6 @@ def extract_features(
     # CPU/GPU option
     cpu_pool = Pool(no_threads, maxtasksperchild=1000)
     gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=gpu_ratio)
-
-
 
     with tf.Session(config=tf.ConfigProto(gpu_options=gpu_options, allow_soft_placement=True)) as sess:
         saver = tf.train.Saver()
@@ -53,13 +52,13 @@ def extract_features(
 
             #TODO find a more generic approach
             if type(dataset.games[0].image.id) is int:
-                image_id_type = np.int32
+                image_id_type = np.int64
             else:
                 image_id_type = h5py.special_dtype(vlen=type(dataset.games[0].image.id))
 
             source_name = os.path.basename(img_input.name[:-2])
             dummy_tokenizer = DummyTokenizer()
-            batchifier = batchifier_cstor(tokenizer=dummy_tokenizer, sources=[source_name])
+            batchifier = batchifier_cstor(tokenizer=dummy_tokenizer, sources=[source_name], **batchifier_args)
             iterator = Iterator(dataset,
                                 batch_size=batch_size,
                                 pool=cpu_pool,
