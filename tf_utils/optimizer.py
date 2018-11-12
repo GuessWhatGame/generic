@@ -162,7 +162,7 @@ def l2_regularization(params, weight_decay, weight_decay_add=list(), weight_deca
 
         if params:
             regularizer = tfc_layers.l2_regularizer(scale=weight_decay)
-            weight_decay =  tfc_layers.apply_regularization(regularizer, weights_list=params)
+            weight_decay = tfc_layers.apply_regularization(regularizer, weights_list=params)
         else:
             weight_decay = 0
 
