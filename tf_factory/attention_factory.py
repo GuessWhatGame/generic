@@ -3,7 +3,7 @@ import tensorflow as tf
 from neural_toolbox.attention import compute_attention, compute_glimpse, compute_convolution_pooling
 
 
-def get_attention(feature_map, context, config, is_training, dropout_keep=1, reuse=False):
+def get_attention(feature_map, context, config, is_training, dropout_keep, reuse=False):
     attention_mode = config.get("mode", None)
 
     if attention_mode == "none":
@@ -31,13 +31,11 @@ def get_attention(feature_map, context, config, is_training, dropout_keep=1, reu
                                     keep_dropout=dropout_keep,
                                     reuse=reuse)
 
-
     elif attention_mode == "conv_pooling":
         image_out = compute_convolution_pooling(feature_map,
                                                 no_mlp_units=config['no_attention_mlp'],
                                                 is_training=is_training,
                                                 reuse=reuse)
-
 
     else:
         assert False, "Wrong attention mode: {}".format(attention_mode)
