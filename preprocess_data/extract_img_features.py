@@ -18,7 +18,6 @@ def extract_features(
         dataset_cstor,
         dataset_args,
         batchifier_cstor,
-        batchifier_args,
         out_dir,
         set_type,
         batch_size,
