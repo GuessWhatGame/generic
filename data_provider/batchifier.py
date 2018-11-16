@@ -7,6 +7,18 @@ class BatchifierSplitMode(Enum):
     SingleQuestion = 1
     DialogueHistory = 2
 
+    @staticmethod
+    def from_string(s):
+        s = s.lower()
+        if s == "no_split":
+            return BatchifierSplitMode.NoSplit
+        elif s == "single_question":
+            return BatchifierSplitMode.SingleQuestion
+        elif s == "dialogue_history":
+            return BatchifierSplitMode.SingleQuestion
+        else:
+            assert False, "Invalid question type for batchifier. Was {}".format(s)
+
 
 def batchifier_split_helper(games, split_mode):
 
