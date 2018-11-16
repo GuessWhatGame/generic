@@ -1,26 +1,67 @@
+import os
+import json
+
+import tarfile
+
 import shutil
 import hashlib
-import json
-import os
 
-from  generic.utils.logger import create_logger
+from generic.utils.logger import create_logger
 
-def load_config(config_file, exp_dir, args=None):
-    with open(config_file, 'rb') as f_config:
-        config_str = f_config.read()
-        exp_identifier = hashlib.md5(config_str).hexdigest()
-        config = json.loads(config_str.decode('utf-8'))
+from generic.tf_utils.ckpt_loader import ExperienceManager
 
-    save_path = '{}/{{}}'.format(os.path.join(exp_dir, exp_identifier))
-    if not os.path.isdir(save_path.format('')):
-        os.makedirs(save_path.format(''))
+
+# ENTRY POINT
+def load_config(args, user_data=None):
+
+    # If the user provide a xp_id, load the configuration from id_xp
+    if args.load_checkpoint is not None:
+
+        xp_dir = os.path.join(args.out_dir, args.load_checkpoint)
+        with open(os.path.join(xp_dir, "config.json"), 'rb') as f_config:
+            config = json.loads(f_config.read().decode('utf-8'))
+
+        xp_manager = ExperienceManager.load_from_xp_id(xp_dir=xp_dir)
+
+    # Otherwise, load the configuration from the config flag
+    else:
+        with open(args.config, 'rb') as f_config:
+            config = json.loads(f_config.read().decode('utf-8'))
+
+        xp_id, xp_dir = prepare_environment(config=config, args=args)
+
+        xp_manager = ExperienceManager(xp_id=xp_id, xp_dir=xp_dir,
+                                       config=config, args=args,
+                                       user_data=user_data)
+
+    return config, xp_manager
+
+
+def get_config_hash(config):
+    str_config = json.dumps(config, sort_keys=True)  # Ensure that config hash are consistent (ordered keys)
+    hash = hashlib.md5(json.dumps(str_config, sort_keys=True).encode('utf-8')).hexdigest()
+    return hash
+
+
+def prepare_environment(config, args):
+
+    # xp_identifier
+    xp_id = get_config_hash(config)
+
+    # Create directory
+    xp_dir = os.path.join(args.out_dir, xp_id)
+    if not os.path.isdir(xp_dir):
+        os.makedirs(xp_dir)
 
     # create logger
-    logger = create_logger(save_path.format('train.log'))
-    logger.info("Config Hash {}".format(exp_identifier))
-    logger.info("Config name : {}".format(config["name"]))
+    logger = create_logger(os.path.join(xp_dir, 'train.log'))
+    logger.info("Config Hash : {}".format(xp_id))
+    logger.info("Config Name : {}".format(config["name"]))
+
+    # display config
     logger.info(config)
 
+    # display args
     if args is not None:
         for key, val in vars(args).items():
             logger.info("{} : {}".format(key, val))
@@ -29,9 +70,17 @@ def load_config(config_file, exp_dir, args=None):
     set_seed(config)
 
     # copy config file
-    shutil.copy(config_file, save_path.format('config.json'))
+    shutil.copy(args.config, os.path.join(xp_dir, 'config.json'))
 
-    return config, exp_identifier, save_path
+    # copy compressed source
+    src_path = os.getcwd().split("/src/", 1)[0]
+    src_path = os.path.join(src_path, 'src')
+    src_out = os.path.join(xp_dir, 'src.tar.gz')
+    with tarfile.open(src_out, "w:gz") as tar:
+        tar.add(src_path, arcname=os.path.basename(src_path))
+
+    return xp_id, xp_dir
+
 
 def get_config_from_xp(exp_dir, identifier):
     config_path = os.path.join(exp_dir, identifier, 'config.json')
@@ -73,7 +122,6 @@ def get_recursively(search_dict, field, no_field_recursive=False):
                         fields_found.append(another_result)
 
     return fields_found
-
 
 
 def set_seed(config):
