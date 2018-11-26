@@ -1,6 +1,7 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as tfc_layers
 
+
 def create_optimizer(network, config, finetune=list(),
                      optim_cst=tf.train.AdamOptimizer,
                      var_list=None,

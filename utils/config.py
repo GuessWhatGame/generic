@@ -73,7 +73,7 @@ def prepare_environment(config, args):
     shutil.copy(args.config, os.path.join(xp_dir, 'config.json'))
 
     # copy compressed source
-    src_path = os.getcwd().split("/src/", 1)[0]
+    src_path = os.getcwd().split("/src", 1)[0]
     src_path = os.path.join(src_path, 'src')
     src_out = os.path.join(xp_dir, 'src.tar.gz')
     with tarfile.open(src_out, "w:gz") as tar:

@@ -62,7 +62,7 @@ if __name__ == '__main__':
         print("Parsing status.pkl in directory {}...".format(log_directory))
 
         # copy config file
-        copyfile(src=os.path.join(directory_path,log_directory, "config.json"), dst=os.path.join(config_dir, "{}.json".format(hash_id)))
+        copyfile(src=os.path.join(directory_path,log_directory, "config.baseline.json"), dst=os.path.join(config_dir, "{}.json".format(hash_id)))
 
         # retrieve info
         best_accuracy_idx = np.argmax(data[metric]["valid"])

@@ -12,10 +12,10 @@ class BatchifierSplitMode(Enum):
         s = s.lower()
         if s == "no_split":
             return BatchifierSplitMode.NoSplit
-        elif s == "single_question":
+        elif s == "question":
             return BatchifierSplitMode.SingleQuestion
-        elif s == "dialogue_history":
-            return BatchifierSplitMode.SingleQuestion
+        elif s == "dialogue":
+            return BatchifierSplitMode.DialogueHistory
         else:
             assert False, "Invalid question type for batchifier. Was {}".format(s)
 

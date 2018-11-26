@@ -103,7 +103,7 @@ class MultiGPUEvaluator(object):
     """
 
     def __init__(self, provided_sources, name_scopes, writer=None,
-                 networks=None, tokenizer=None): #Debug purpose only, do not use here
+                 networks=None, tokenizer=None):  # Debug purpose only, do not use here
 
         # Dispatch sources
         self.provided_sources = provided_sources

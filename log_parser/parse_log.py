@@ -69,7 +69,7 @@ if __name__ == '__main__':
         print("Parsing log in directory {}...".format(log_directory))
 
         # copy config file
-        copyfile(src=os.path.join(directory_path,log_directory, "config.json"), dst=os.path.join(config_dir, "{}.json".format(hash_id)))
+        copyfile(src=os.path.join(directory_path,log_directory, "config.baseline.json"), dst=os.path.join(config_dir, "{}.json".format(hash_id)))
 
         # Look for scores in log file
         ckpt_save_idx = None

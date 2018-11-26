@@ -1,5 +1,6 @@
 from neural_toolbox.fuse_mechanism import *
 
+
 def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
 
     assert input1 is not None or input2 is not None
@@ -7,7 +8,7 @@ def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
     if input1 is not None and input2 is not None:
         assert len(input1.shape) == len(input2.shape) and len(input1.shape) == 2
 
-    fusing_mode = config.get("mode", None)
+    fusing_mode = config.get("mode", "none")
 
     if fusing_mode == "none":
         if input1 is None:
@@ -27,13 +28,11 @@ def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
         fuse_out = fuse_by_brut_force(input1, input2)
 
     elif fusing_mode == "vis":
-        fuse_out = fuse_by_vis(input1,input2,
-                                projection_size=config['projection_size'],
-                                apply_proj1=config.get('apply_proj1',True),
-                                apply_proj2=config.get('apply_proj2',True),
-                                output_size=config.get('output_size', 0),
-                                dropout_keep=dropout_keep,
-                                reuse=reuse)
+        fuse_out = fuse_by_vis(input1, input2,
+                               projection_size=config['projection_size'],
+                               output_size=config['output_size'],
+                               dropout_keep=dropout_keep,
+                               reuse=reuse)
     else:
         assert False, "Invalid fusing mode '{}'".format(fusing_mode)
 
