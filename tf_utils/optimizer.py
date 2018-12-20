@@ -1,5 +1,8 @@
 import tensorflow as tf
 import tensorflow.contrib.layers as tfc_layers
+import collections
+
+AccOptimizer = collections.namedtuple("AccOptimizer", ["zero", "accumulate", "update"])
 
 
 def create_optimizer(network, config, finetune=list(),
@@ -47,11 +50,13 @@ def create_optimizer(network, config, finetune=list(),
 
         # update ops after each accumulation step
         if apply_update_ops:
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
+            update_ops = [ops for ops in tf.get_collection(tf.GraphKeys.UPDATE_OPS) if ops.name in network.scope_name]
             with tf.control_dependencies(acc + update_ops):
                 acc = tf.no_op()
 
-        optimize = (zero, acc, optimizer.apply_gradients(update))
+        optimize = AccOptimizer(zero=zero,
+                                accumulate=acc,
+                                update=optimizer.apply_gradients(update))
 
     # Compute classic gradient
     else:
@@ -92,9 +97,10 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), accumulate_gra
 
             training_loss = loss
             if weight_decay > 0:
-                training_loss += l2_regularization(train_vars, weight_decay=weight_decay,
-                                                 weight_decay_add=weight_decay_add,
-                                                 weight_decay_remove=weight_decay_remove)
+                training_loss += l2_regularization(train_vars,
+                                                   weight_decay=weight_decay,
+                                                   weight_decay_add=weight_decay_add,
+                                                   weight_decay_remove=weight_decay_remove)
             # compute gradient
             grads = optimizer.compute_gradients(training_loss, train_vars)
             gradients.append(grads)

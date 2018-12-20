@@ -1,6 +1,6 @@
 import copy
 from enum import Enum
-
+import collections
 
 class BatchifierSplitMode(Enum):
     NoSplit = 0
@@ -32,24 +32,25 @@ def batchifier_split_helper(games, split_mode):
     elif split_mode == BatchifierSplitMode.SingleQuestion:
         for game in games:
             for i, q, a in zip(game.question_ids, game.questions, game.answers):
-                new_game = copy.copy(game)
+                new_game = copy.deepcopy(game)
                 new_game.questions = [q]
                 new_game.question_ids = [i]
                 new_game.answers = [a]
                 new_game.is_full_dialogue = False
+                new_game.user_data["full_game"] = game
 
                 new_games.append(new_game)
-
 
     # One sample = Subset of questions
     elif split_mode == BatchifierSplitMode.DialogueHistory:
         for game in games:
             for i in range(len(game.question_ids)):
-                new_game = copy.copy(game)
+                new_game = copy.deepcopy(game)
                 new_game.questions = game.questions[:i + 1]
                 new_game.question_ids = game.question_ids[:i + 1]
                 new_game.answers = game.answers[:i + 1]
                 new_game.is_full_dialogue = len(game.question_ids) == len(new_game.question_ids)
+                new_game.user_data["full_game"] = game
 
                 new_games.append(new_game)
 
@@ -58,11 +59,11 @@ def batchifier_split_helper(games, split_mode):
 
 class AbstractBatchifier(object):
 
+    def apply(self, games, skip_targets=False):
+        pass
+
     def split(self, games):
         return games
 
     def filter(self, games):
-        return games
-
-    def apply(self, games):
         return games

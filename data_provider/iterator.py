@@ -61,14 +61,17 @@ class Iterator(object):
         if shuffle:
             random.shuffle(games)
 
-        self.n_examples = len(games)
         self.batch_size = batch_size
+        self.n_batches = int(math.ceil(1. * len(games) / self.batch_size))
+        if use_padding:
+            self.n_examples = self.n_batches * self.batch_size
+        else:
+            self.n_examples = len(games)
 
-        self.n_batches = int(math.ceil(1. * self.n_examples / self.batch_size))
         batch = split_batch(games, batch_size, use_padding)
 
         # no proc
-        # self.it = (batchifier.apply(b )for b in batch)
+        # self.it = (batchifier.apply(b) for b in batch)
 
         # Multi_proc
         self.semaphores = Semaphore(no_semaphore)
@@ -84,7 +87,7 @@ class Iterator(object):
     def __next__(self):
         self.semaphores.release()
         return self.process_iterator.next()
-        #return self.it.__next__()
+        # return self.it.__next__()
 
     # trick for python 2.X
     def next(self):
@@ -95,20 +98,26 @@ class Iterator(object):
 class BasicIterator(object):
     """Provides an generic multithreaded iterator over the dataset."""
 
-    def __init__(self, dataset, batch_size, batchifier, use_padding=False):
+    def __init__(self, games, batch_size, batchifier, shuffle=False, use_padding=False):
 
         # Filtered games
-        games = dataset.get_data()
         games = batchifier.filter(games)
+        games = batchifier.split(games)
 
-        self.n_examples = len(games)
         self.batch_size = batch_size
+        self.n_batches = int(math.ceil(1. * len(games) / self.batch_size))
+        if use_padding:
+            self.n_examples = self.n_batches * self.batch_size
+        else:
+            self.n_examples = len(games)
 
-        self.n_batches = int(math.ceil(1. * self.n_examples / self.batch_size))
         batch = split_batch(games, batch_size, use_padding)
 
+        if shuffle:
+            random.shuffle(games)
+
         # no proc
-        self.it = (batchifier.apply(b )for b in batch)
+        self.it = (batchifier.apply(b) for b in batch)
 
     def __len__(self):
         return self.n_batches

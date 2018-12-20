@@ -157,8 +157,8 @@ def create_resnet_saver(networks):
         start = len(network.scope_name) + 1
         for v in network.get_resnet_parameters():
             resnet_vars[v.name[start:-2]] = v
-
     return tf.train.Saver(resnet_vars)
+
 
 
 

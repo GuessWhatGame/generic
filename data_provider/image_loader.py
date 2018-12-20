@@ -40,9 +40,23 @@ class AbstractImgBuilder(object):
 class AbstractImgLoader(object):
     def __init__(self, img_path):
         self.img_path = img_path
+        self.buffer = None
 
     def get_image(self, **kwargs):
+        if self.buffer is None:
+            return self._get_image(**kwargs)
+        else:
+            return self.buffer
+
+    def _get_image(self, **kwargs):
         pass
+
+    def bufferize(self, **kwargs):
+        if self.buffer is None:
+            self.buffer = self.get_image(**kwargs)
+
+    def flush(self):
+        self.buffer = None
 
 
 class DummyImgBuilder(AbstractImgBuilder, AbstractImgLoader):
@@ -53,7 +67,7 @@ class DummyImgBuilder(AbstractImgBuilder, AbstractImgLoader):
     def build(self, image_id, filename, **kwargs):
         return self
 
-    def get_image(self, **kwargs):
+    def _get_image(self, **kwargs):
         return np.zeros(self.size)
 
 
@@ -111,10 +125,10 @@ class h5FeatureBuilder(AbstractImgBuilder):
             img2idx = self.img2idx[h5filename]
 
         if optional and image_id in img2idx or (not optional):
+            loader = h5FeatureLoader(h5filepath, h5file=h5file, id=img2idx[image_id])
             if self.bufferize:
-                return h5FeatureBufloader(h5filepath, h5file=h5file, id=img2idx[image_id])
-            else:
-                return h5FeatureLoader(h5filepath, h5file=h5file, id=img2idx[image_id])
+                loader.bufferize()
+            return loader
         else:
             return None
 
@@ -126,18 +140,12 @@ class h5FeatureLoader(AbstractImgLoader):
         self.h5file = h5file
         self.id = id
 
-    def get_image(self, **kwargs):
+    def _get_image(self, **kwargs):
         return self.h5file[h5_feature_key][self.id]
 
-
-# Load while loading dataset (requires a lot of memory)
-class h5FeatureBufloader(AbstractImgLoader):
-    def __init__(self, img_path, h5file, id):
-        AbstractImgLoader.__init__(self, img_path)
-        self.data = h5file[h5_feature_key][id]
-
-    def get_image(self, **kwargs):
-        return self.data
+    # Make DeepCopy <=> shallow copy (as h5py file handler do not support deepcopy)
+    def __deepcopy__(self, memo):
+        return h5FeatureLoader(self.img_path, h5file=self.h5file, id=self.id)
 
 
 class RawImageBuilder(AbstractImgBuilder):
@@ -159,7 +167,7 @@ class RawImageLoader(AbstractImgLoader):
         self.height = height
         self.channel = channel
 
-    def get_image(self, **kwargs):
+    def _get_image(self, **kwargs):
         img = Image.open(self.img_path).convert('RGB')
 
         img = resize_image(img, self.width, self.height)
@@ -194,7 +202,7 @@ class RawCropLoader(AbstractImgLoader):
         self.bbox = bbox
         self.scale = scale
 
-    def get_image(self, **kwargs):
+    def _get_image(self, **kwargs):
         img = Image.open(self.img_path).convert('RGB')
 
         crop = scaled_crop_and_pad(raw_img=img, bbox=self.bbox, scale=self.scale)

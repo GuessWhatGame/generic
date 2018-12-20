@@ -39,14 +39,13 @@ class CropDataset(AbstractDataset):
     def split(self, game):
         games = []
         for obj in game.objects:
-            new_game = copy.copy(game)
+            new_game = copy.deepcopy(game)
 
             # select new object
             new_game.object = obj
-            new_game.object_id = obj.id
 
             # Hack the image id to differentiate objects
-            new_game.image = copy.copy(game.image)
+            new_game.image = copy.deepcopy(game.image)
             new_game.image.id = obj.id
 
             games.append(new_game)
@@ -55,10 +54,10 @@ class CropDataset(AbstractDataset):
 
     def update_ref(self, game):
 
-        new_game = copy.copy(game)
+        new_game = copy.deepcopy(game)
 
         # Hack the image id to differentiate objects
-        new_game.image = copy.copy(game.image)
-        new_game.image.id = game.object_id
+        new_game.image = copy.deepcopy(game.image)
+        new_game.image.id = game.object.id
 
         return [new_game]

@@ -30,7 +30,6 @@ def get_fusion_mechanism(input1, input2, config, dropout_keep=1, reuse=False):
     elif fusing_mode == "vis":
         fuse_out = fuse_by_vis(input1, input2,
                                projection_size=config['projection_size'],
-                               output_size=config['output_size'],
                                dropout_keep=dropout_keep,
                                reuse=reuse)
     else:
