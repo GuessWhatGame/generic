@@ -53,8 +53,9 @@ class Evaluator(object):
             outputs = list(OrderedDict.fromkeys(outputs))  # remove duplicate while preserving ordering
             listener.before_epoch(is_training)
 
-        n_iter = 1.
-        aggregated_outputs = [0.0 for v in outputs if is_scalar(v) and v in original_outputs]
+        n_iter, mean_ratio = 1., 0.
+        aggregated_outputs = [[] for v in outputs if is_scalar(v) and v in original_outputs]
+        # aggregated_outputs = [[],[]]
 
         # Showing progress is optional
         progress = tqdm if show_progress else lambda x: x
@@ -71,17 +72,19 @@ class Evaluator(object):
             for var, result in zip(outputs, results):
 
                 if is_scalar(var) and var in original_outputs:
-                    # moving average
-                    aggregated_outputs[i] = ((n_iter - 1.) / n_iter) * aggregated_outputs[i] + result / n_iter
+                    aggregated_outputs[i].append(result*len(batch["raw"]))
                     i += 1
 
                 if listener is not None and listener.valid(var):
                     listener.after_batch(result, batch, is_training)
 
+            mean_ratio += len(batch["raw"])
             n_iter += 1
 
         if listener is not None:
             listener.after_epoch(is_training)
+
+        aggregated_outputs = [sum(out) / mean_ratio for out in aggregated_outputs]
 
         return aggregated_outputs
 
@@ -130,8 +133,8 @@ class MultiGPUEvaluator(object):
         is_training = any([is_optimizer(x) for x in outputs])
 
         # Prepare epoch
-        n_iter = 1.
-        aggregated_outputs = [0.0 for v in outputs if is_scalar(v)]
+        n_iter, mean_ratio = 1., 0.
+        aggregated_outputs = [[] for v in outputs if is_scalar(v)]
 
         scope_to_do = list(self.name_scopes)
         multi_gpu_batch = dict()
@@ -162,14 +165,15 @@ class MultiGPUEvaluator(object):
                 i = 0
                 for var, result in zip(outputs, results):
                     if is_scalar(var) and var in outputs:
-                        # moving average
-                        aggregated_outputs[i] = ((n_iter - 1.) / n_iter) * aggregated_outputs[i] + result / n_iter
+                        aggregated_outputs[i].append(var * len(batch["raw"]))
                         i += 1
 
                     elif is_summary(var):  # move into listener?
                         self.writer.add_summary(result)
 
                     # No listener as "results" may arrive in different orders... need to find a way to unshuffle them
+
+        aggregated_outputs = [sum(out) / mean_ratio for out in aggregated_outputs]
 
         return aggregated_outputs
 

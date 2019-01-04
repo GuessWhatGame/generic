@@ -58,7 +58,7 @@ class ExperienceManager(object):
                                        args=argparse.Namespace(),  # dummy
                                        config=dict())  # dummy
 
-        status_path = os.path.join(xp_dir, "last", ExperienceManager.status_filename)
+        status_path = os.path.join(xp_dir, ExperienceManager.status_filename)
         with open(status_path, 'rb') as f:
             data = json.loads(f.read().decode('utf-8'))
             xp_manager.data = data
@@ -134,7 +134,7 @@ class ExperienceManager(object):
         # Save status
         status_path = os.path.join(self.dir_xp, self.status_filename)
         with open(status_path, 'w') as f_out:
-            f_out.write(json.dumps(self.data))
+            f_out.write(json.dumps(self.data, allow_nan=True))
 
     def update_user_data(self, user_data):
 
@@ -143,7 +143,7 @@ class ExperienceManager(object):
         self.data["user_data"] = {**self.data["user_data"], **user_data}
 
         with open(status_path, 'w') as f_out:
-            f_out.write(json.dumps(self.data))
+            f_out.write(json.dumps(self.data, allow_nan=True))
 
 
 def create_resnet_saver(networks):

@@ -36,28 +36,30 @@ class CropDataset(AbstractDataset):
     def load(dataset_cls, expand_objects, **kwargs):
         return CropDataset(dataset_cls(**kwargs), expand_objects=expand_objects)
 
-    def split(self, game):
+    @staticmethod
+    def split(game):
         games = []
         for obj in game.objects:
-            new_game = copy.deepcopy(game)
+            new_game = copy.copy(game)  # Beware shallow copy!
 
             # select new object
             new_game.object = obj
 
             # Hack the image id to differentiate objects
-            new_game.image = copy.deepcopy(game.image)
+            new_game.image = copy.copy(game.image)  # Beware shallow copy!
             new_game.image.id = obj.id
 
             games.append(new_game)
 
         return games
 
-    def update_ref(self, game):
+    @staticmethod
+    def update_ref(game):
 
-        new_game = copy.deepcopy(game)
+        new_game = copy.copy(game)  # Beware shallow copy!
 
         # Hack the image id to differentiate objects
-        new_game.image = copy.deepcopy(game.image)
+        new_game.image = copy.copy(game.image)  # Beware shallow copy!
         new_game.image.id = game.object.id
 
         return [new_game]

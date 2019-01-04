@@ -17,6 +17,7 @@ def load_config(args, user_data=None):
     # If the user provide a xp_id, load the configuration from id_xp
     if args.load_checkpoint is not None:
 
+        xp_id = args.load_checkpoint
         xp_dir = os.path.join(args.out_dir, args.load_checkpoint)
         with open(os.path.join(xp_dir, "config.json"), 'rb') as f_config:
             config = json.loads(f_config.read().decode('utf-8'))
@@ -28,30 +29,27 @@ def load_config(args, user_data=None):
         with open(args.config, 'rb') as f_config:
             config = json.loads(f_config.read().decode('utf-8'))
 
-        xp_id, xp_dir = prepare_environment(config=config, args=args)
+        # xp_identifier
+        xp_id = get_config_hash(config)
+
+        # Create directory
+        xp_dir = os.path.join(args.out_dir, xp_id)
+        if not os.path.isdir(xp_dir):
+            os.makedirs(xp_dir)
+
+        # copy config file
+        shutil.copy(args.config, os.path.join(xp_dir, 'config.json'))
+
+        # copy compressed source
+        src_path = os.getcwd().split("/src", 1)[0]
+        src_path = os.path.join(src_path, 'src')
+        src_out = os.path.join(xp_dir, 'src.tar.gz')
+        with tarfile.open(src_out, "w:gz") as tar:
+            tar.add(src_path, arcname=os.path.basename(src_path))
 
         xp_manager = ExperienceManager(xp_id=xp_id, xp_dir=xp_dir,
                                        config=config, args=args,
                                        user_data=user_data)
-
-    return config, xp_manager
-
-
-def get_config_hash(config):
-    str_config = json.dumps(config, sort_keys=True)  # Ensure that config hash are consistent (ordered keys)
-    hash = hashlib.md5(json.dumps(str_config, sort_keys=True).encode('utf-8')).hexdigest()
-    return hash
-
-
-def prepare_environment(config, args):
-
-    # xp_identifier
-    xp_id = get_config_hash(config)
-
-    # Create directory
-    xp_dir = os.path.join(args.out_dir, xp_id)
-    if not os.path.isdir(xp_dir):
-        os.makedirs(xp_dir)
 
     # create logger
     logger = create_logger(os.path.join(xp_dir, 'train.log'))
@@ -69,17 +67,13 @@ def prepare_environment(config, args):
     # set seed
     set_seed(config)
 
-    # copy config file
-    shutil.copy(args.config, os.path.join(xp_dir, 'config.json'))
+    return config, xp_manager
 
-    # copy compressed source
-    src_path = os.getcwd().split("/src", 1)[0]
-    src_path = os.path.join(src_path, 'src')
-    src_out = os.path.join(xp_dir, 'src.tar.gz')
-    with tarfile.open(src_out, "w:gz") as tar:
-        tar.add(src_path, arcname=os.path.basename(src_path))
 
-    return xp_id, xp_dir
+def get_config_hash(config):
+    str_config = json.dumps(config, sort_keys=True)  # Ensure that config hash are consistent (ordered keys)
+    hash = hashlib.md5(json.dumps(str_config, sort_keys=True).encode('utf-8')).hexdigest()
+    return hash
 
 
 def get_config_from_xp(exp_dir, identifier):
