@@ -18,6 +18,8 @@ def create_optimizer(network, config, finetune=list(),
     weight_decay = config['weight_decay']
     weight_decay_add = config['weight_decay_add']
     weight_decay_remove = config.get('weight_decay_remove', [])
+    gradient_noise_std = config.get('gradient_noise_std', 0)
+
 
     # create optimizer
     optimizer = optim_cst(learning_rate=lrt)
@@ -38,21 +40,27 @@ def create_optimizer(network, config, finetune=list(),
                                                  weight_decay_remove=weight_decay_remove)
 
     # compute gradient
+    global_step = tf.Variable(0, name='global_step', trainable=False)
     grad = optimizer.compute_gradients(training_loss, var_list=var_list)
 
     # apply gradient clipping
     if clip_val > 0:
         grad = clip_gradient(grad, clip_val=clip_val)
 
+    if gradient_noise_std > 0:
+        grad = gradient_noise(grad, step=global_step, std=gradient_noise_std)
+
+    update_ops = []
+    if apply_update_ops:
+        update_ops = [ops for ops in tf.get_collection(tf.GraphKeys.UPDATE_OPS) if ops.name in network.scope_name]
+
     # Compute accumulated gradient
     if accumulate_gradient:
         zero, acc, update = get_accumulate_gradient_ops(grad)
 
         # update ops after each accumulation step
-        if apply_update_ops:
-            update_ops = [ops for ops in tf.get_collection(tf.GraphKeys.UPDATE_OPS) if ops.name in network.scope_name]
-            with tf.control_dependencies(acc + update_ops):
-                acc = tf.no_op()
+        with tf.control_dependencies(acc + update_ops):
+            acc = tf.no_op()
 
         optimize = AccOptimizer(zero=zero,
                                 accumulate=acc,
@@ -60,12 +68,8 @@ def create_optimizer(network, config, finetune=list(),
 
     # Compute classic gradient
     else:
-        if apply_update_ops:
-            update_ops = tf.get_collection(tf.GraphKeys.UPDATE_OPS)
-            with tf.control_dependencies(update_ops):
-                optimize = optimizer.apply_gradients(grad)
-        else:
-            optimize = optimizer.apply_gradients(grad)
+        with tf.control_dependencies(update_ops):
+            optimize = optimizer.apply_gradients(grad, global_step=global_step)
 
     accuracy = network.get_accuracy()
 
@@ -143,7 +147,7 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), accumulate_gra
 #https://stackoverflow.com/questions/46772685/how-to-accumulate-gradients-in-tensorflow
 def get_accumulate_gradient_ops(gvs):
 
-    # zero initalizer
+    # zero initializer
     var_list = [gv[1] for gv in gvs]
     accum_vars = [tf.Variable(tf.zeros_like(v.initialized_value()), trainable=False) for v in var_list]
     zero_ops = [v.assign(tf.zeros_like(v)) for v in accum_vars]
@@ -158,6 +162,15 @@ def get_accumulate_gradient_ops(gvs):
 def clip_gradient(gvs, clip_val):
     clipped_gvs = [(tf.clip_by_norm(grad, clip_val), var) for grad, var in gvs]
     return clipped_gvs
+
+
+# https://openreview.net/pdf?id=rkjZ2Pcxe Decay magic number comes from the paper
+def gradient_noise(gvs, step, std, decay=0.55):
+    stddev = 1. * std / tf.pow(tf.to_float(step + 1), decay)
+    gvs = [(grad + tf.random_normal(shape=tf.shape(grad), mean=0., stddev=stddev, dtype=tf.float32),
+            var)
+           for grad, var in gvs]
+    return gvs
 
 
 def l2_regularization(params, weight_decay, weight_decay_add=list(), weight_decay_remove=list()):
