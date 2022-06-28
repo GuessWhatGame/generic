@@ -13,7 +13,7 @@ def create_optimizer(network, config, finetune=list(),
                      loss=None):
 
     # Retrieve conf
-    lrt = config['learning_rate']
+    lrt = config['optimizer']['learning_rate']
     clip_val = config.get('clip_val', 0.)
     weight_decay = config['weight_decay']
     weight_decay_add = config['weight_decay_add']
@@ -80,7 +80,7 @@ def create_multi_gpu_optimizer(networks, config, finetune=list(), accumulate_gra
 #TODO implement accumulated gradient
 
     # Retrieve conf
-    lrt = config['learning_rate']
+    lrt = config['optimizer']['learning_rate']
     clip_val = config.get('clip_val', 0.)
     weight_decay = config['weight_decay']
     weight_decay_add = config['weight_decay_add']
